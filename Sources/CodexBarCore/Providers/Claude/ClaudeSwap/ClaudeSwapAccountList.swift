@@ -5,10 +5,13 @@ import Foundation
 ///
 /// Only the fields allow-listed in `docs/claude-multi-account-and-status-items.md`
 /// are decoded: slot number, display email, display-only `organizationName`,
-/// optional display-only `alias`, active state, usage status, and the
-/// 5-hour/7-day windows and optional model-scoped weekly windows (percent +
-/// reset timestamp). Everything else in the payload is ignored; unknown schema
-/// versions and partial top-level shapes are rejected.
+/// optional display-only `alias`, active state, usage status, the 5-hour/7-day
+/// windows and optional model-scoped weekly windows (percent + reset timestamp),
+/// the optional pay-as-you-go `spend` window, the additive `disabled` marker,
+/// the measurement freshness fields, and the display-only `lastGoodUsage`
+/// fallback. All of these are display-only; none is credential material and none
+/// changes which arguments the adapter runs. Everything else in the payload is
+/// ignored; unknown schema versions and partial top-level shapes are rejected.
 public struct ClaudeSwapAccountList: Equatable, Sendable {
     public let activeAccountNumber: Int?
     public let accounts: [ClaudeSwapAccountRow]
@@ -34,6 +37,17 @@ public struct ClaudeSwapAccountRow: Equatable, Sendable {
     public let fiveHour: ClaudeSwapUsageWindow?
     public let sevenDay: ClaudeSwapUsageWindow?
     public let scoped: [ClaudeSwapScopedUsageWindow]
+    /// Optional pay-as-you-go spend window from cswap schema v1.
+    public let spend: ClaudeSwapSpendWindow?
+    /// Additive `disabled: true` marker; the slot is held out of claude-swap's
+    /// own rotation but stays a valid explicit switch target.
+    public let isDisabled: Bool
+    /// How old the served `usage` measurement is. claude-swap serves last-known
+    /// numbers when a fetch fails, so a row can be `ok` yet minutes stale.
+    public let usageFreshness: ClaudeSwapUsageFreshness?
+    /// Display-only last-known measurement for rows whose `usage` is null.
+    /// Never drives activation decisions; only keeps the card from going blank.
+    public let lastGoodUsage: ClaudeSwapLastGoodUsage?
 
     public init(
         number: Int,
@@ -44,7 +58,11 @@ public struct ClaudeSwapAccountRow: Equatable, Sendable {
         usageStatus: ClaudeSwapUsageStatus,
         fiveHour: ClaudeSwapUsageWindow?,
         sevenDay: ClaudeSwapUsageWindow?,
-        scoped: [ClaudeSwapScopedUsageWindow] = [])
+        scoped: [ClaudeSwapScopedUsageWindow] = [],
+        spend: ClaudeSwapSpendWindow? = nil,
+        isDisabled: Bool = false,
+        usageFreshness: ClaudeSwapUsageFreshness? = nil,
+        lastGoodUsage: ClaudeSwapLastGoodUsage? = nil)
     {
         self.number = number
         self.email = email
@@ -55,6 +73,84 @@ public struct ClaudeSwapAccountRow: Equatable, Sendable {
         self.fiveHour = fiveHour
         self.sevenDay = sevenDay
         self.scoped = scoped
+        self.spend = spend
+        self.isDisabled = isDisabled
+        self.usageFreshness = usageFreshness
+        self.lastGoodUsage = lastGoodUsage
+    }
+
+    /// The windows carried by the row's own `usage` object.
+    public var measurement: ClaudeSwapUsageMeasurement {
+        ClaudeSwapUsageMeasurement(
+            fiveHour: self.fiveHour,
+            sevenDay: self.sevenDay,
+            scoped: self.scoped,
+            spend: self.spend)
+    }
+}
+
+/// One usage measurement's windows. Shared by the row's live `usage` object and
+/// its display-only `lastGoodUsage` fallback, which have the same JSON shape.
+public struct ClaudeSwapUsageMeasurement: Equatable, Sendable {
+    public let fiveHour: ClaudeSwapUsageWindow?
+    public let sevenDay: ClaudeSwapUsageWindow?
+    public let scoped: [ClaudeSwapScopedUsageWindow]
+    public let spend: ClaudeSwapSpendWindow?
+
+    public init(
+        fiveHour: ClaudeSwapUsageWindow?,
+        sevenDay: ClaudeSwapUsageWindow?,
+        scoped: [ClaudeSwapScopedUsageWindow] = [],
+        spend: ClaudeSwapSpendWindow? = nil)
+    {
+        self.fiveHour = fiveHour
+        self.sevenDay = sevenDay
+        self.scoped = scoped
+        self.spend = spend
+    }
+
+    public var isEmpty: Bool {
+        self.fiveHour == nil && self.sevenDay == nil && self.scoped.isEmpty && self.spend == nil
+    }
+}
+
+/// When a served measurement was fetched, and how old it was at serialization.
+public struct ClaudeSwapUsageFreshness: Equatable, Sendable {
+    public let fetchedAt: Date
+    public let ageSeconds: Double?
+
+    public init(fetchedAt: Date, ageSeconds: Double?) {
+        self.fetchedAt = fetchedAt
+        self.ageSeconds = ageSeconds
+    }
+}
+
+/// A display-grade last-known measurement plus the time it was taken.
+public struct ClaudeSwapLastGoodUsage: Equatable, Sendable {
+    public let measurement: ClaudeSwapUsageMeasurement
+    public let freshness: ClaudeSwapUsageFreshness
+
+    public init(measurement: ClaudeSwapUsageMeasurement, freshness: ClaudeSwapUsageFreshness) {
+        self.measurement = measurement
+        self.freshness = freshness
+    }
+}
+
+/// Pay-as-you-go spend for the current billing window (`usage.spend`).
+public struct ClaudeSwapSpendWindow: Equatable, Sendable {
+    public let used: Double
+    public let limit: Double
+    public let usedPercent: Double
+    /// Currency code as reported by claude-swap (e.g. `USD`).
+    public let currencyCode: String
+    public let resetsAt: Date?
+
+    public init(used: Double, limit: Double, usedPercent: Double, currencyCode: String, resetsAt: Date?) {
+        self.used = used
+        self.limit = limit
+        self.usedPercent = usedPercent
+        self.currencyCode = currencyCode
+        self.resetsAt = resetsAt
     }
 }
 
@@ -90,6 +186,7 @@ public enum ClaudeSwapUsageStatus: Equatable, Sendable {
     case apiKey
     case keychainUnavailable
     case noCredentials
+    case foreignCredential
     case unavailable
     case unknown(String)
 
@@ -101,6 +198,7 @@ public enum ClaudeSwapUsageStatus: Equatable, Sendable {
         case "api_key": self = .apiKey
         case "keychain_unavailable": self = .keychainUnavailable
         case "no_credentials": self = .noCredentials
+        case "foreign_credential": self = .foreignCredential
         case "unavailable": self = .unavailable
         default: self = .unknown(rawValue)
         }
@@ -211,7 +309,77 @@ public enum ClaudeSwapListParser {
             usageStatus: ClaudeSwapUsageStatus(rawValue: rawStatus),
             fiveHour: self.parseWindow(usage?["fiveHour"], slot: number, name: "fiveHour"),
             sevenDay: self.parseWindow(usage?["sevenDay"], slot: number, name: "sevenDay"),
-            scoped: self.parseScopedWindows(usage?["scoped"]))
+            scoped: self.parseScopedWindows(usage?["scoped"]),
+            spend: self.parseSpendWindow(usage?["spend"]),
+            isDisabled: row["disabled"] as? Bool ?? false,
+            usageFreshness: self.parseFreshness(
+                fetchedAt: row["usageFetchedAt"],
+                ageSeconds: row["usageAgeSeconds"]),
+            lastGoodUsage: self.parseLastGoodUsage(row))
+    }
+
+    /// Additive display-only fallback. claude-swap emits it for rows whose live
+    /// `usage` is null but whose last measurement is still worth showing, so a
+    /// token-expired card keeps its bars instead of going blank. Parsed
+    /// leniently: a malformed fallback is dropped, never surfaced as an error.
+    private static func parseLastGoodUsage(_ row: [String: Any]) -> ClaudeSwapLastGoodUsage? {
+        guard let raw = row["lastGoodUsage"] as? [String: Any] else { return nil }
+        guard let freshness = self.parseFreshness(
+            fetchedAt: row["lastGoodFetchedAt"],
+            ageSeconds: row["lastGoodAgeSeconds"])
+        else {
+            return nil
+        }
+        let measurement = ClaudeSwapUsageMeasurement(
+            fiveHour: self.lenientWindow(raw["fiveHour"]),
+            sevenDay: self.lenientWindow(raw["sevenDay"]),
+            scoped: self.parseScopedWindows(raw["scoped"]),
+            spend: self.parseSpendWindow(raw["spend"]))
+        guard !measurement.isEmpty else { return nil }
+        return ClaudeSwapLastGoodUsage(measurement: measurement, freshness: freshness)
+    }
+
+    private static func parseFreshness(fetchedAt: Any?, ageSeconds: Any?) -> ClaudeSwapUsageFreshness? {
+        guard let text = fetchedAt as? String, let date = self.parseTimestamp(text) else { return nil }
+        let age = self.finiteDouble(ageSeconds).map { max(0, $0) }
+        return ClaudeSwapUsageFreshness(fetchedAt: date, ageSeconds: age)
+    }
+
+    /// `usage.spend` is additive schema-v1 data for pay-as-you-go accounts.
+    /// Dropped rather than thrown on malformed input so it cannot suppress
+    /// otherwise valid rate windows.
+    private static func parseSpendWindow(_ raw: Any?) -> ClaudeSwapSpendWindow? {
+        guard let window = raw as? [String: Any] else { return nil }
+        guard let used = self.finiteDouble(window["used"]),
+              let limit = self.finiteDouble(window["limit"]),
+              let pct = self.finiteDouble(window["pct"]),
+              used >= 0, limit > 0
+        else {
+            return nil
+        }
+        let currency = (window["currency"] as? String)?.trimmingCharacters(in: .whitespacesAndNewlines)
+        var resetsAt: Date?
+        if let rawResetsAt = window["resetsAt"] as? String {
+            resetsAt = self.parseTimestamp(rawResetsAt)
+        }
+        return ClaudeSwapSpendWindow(
+            used: used,
+            limit: limit,
+            usedPercent: min(max(pct, 0), 100),
+            currencyCode: (currency?.isEmpty == false ? currency : nil) ?? "USD",
+            resetsAt: resetsAt)
+    }
+
+    /// Non-throwing window parse for additive, display-only payload sections.
+    private static func lenientWindow(_ raw: Any?) -> ClaudeSwapUsageWindow? {
+        guard let window = raw as? [String: Any] else { return nil }
+        guard let pct = self.finiteDouble(window["pct"]) else { return nil }
+        var resetsAt: Date?
+        if let rawResetsAt = window["resetsAt"] as? String {
+            guard let date = self.parseTimestamp(rawResetsAt) else { return nil }
+            resetsAt = date
+        }
+        return ClaudeSwapUsageWindow(usedPercent: min(max(pct, 0), 100), resetsAt: resetsAt)
     }
 
     private static func parseWindow(_ raw: Any?, slot: Int, name: String) throws -> ClaudeSwapUsageWindow? {
