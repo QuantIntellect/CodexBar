@@ -154,8 +154,11 @@ The accepted multi-account design in
 - Behavior: on each Claude refresh, CodexBar runs `cswap --list --json` independently of the ambient Claude fetch (no
   shell, fixed arguments, bounded runtime and output), requires `schemaVersion == 1`, and parses only slot number,
   active state, usage status, email (display only), display-only `organizationName` (always present, may be empty),
-  optional display-only `alias` when non-empty, the 5-hour/7-day windows, and optional display-only model-scoped
-  weekly windows from `usage.scoped`. Identity stays `claude-swap:<slot>`; organization name and alias are never
+  optional display-only `alias` when non-empty, the 5-hour/7-day windows, optional display-only model-scoped
+  weekly windows from `usage.scoped`, optional pay-as-you-go `usage.spend`, the additive `disabled` marker,
+  measurement freshness (`usageFetchedAt`/`usageAgeSeconds`), and the display-only `lastGoodUsage` fallback.
+  claude-swap's human `message` field is never parsed: it embeds the account email and must not bypass Hide
+  Personal Info. Identity stays `claude-swap:<slot>`; organization name and alias are never
   used as identity. When two or more slots share an email, cards append ` · organizationName` or ` · Account N`;
   a user-chosen cswap alias replaces that label. Unique emails stay email-only.
 - Display: when claude-swap reports more than one account, the Claude menu and `codexbar cards` show one card per
@@ -182,8 +185,11 @@ The accepted multi-account design in
   stale data, surface the error in provider settings, and never affect the ambient Claude usage card. In terminal
   cards, a list failure retains the current ambient output, adds a distinct `Claude (claude-swap)` footer entry, and
   exits non-zero.
-- Sentinel statuses (`token_expired`, `api_key`, `keychain_unavailable`, `no_credentials`,
-  and unknown future values) render as per-account notes instead of usage bars in both full and brief cards. When
+- Sentinel statuses (`token_expired`, `relogin_required`, `api_key`, `keychain_unavailable`, `no_credentials`,
+  `foreign_credential`, and unknown future values) render as per-account notes in both full and brief cards. When
+  claude-swap still carries a `lastGoodUsage` measurement for such a row, its last known bars stay visible beside the
+  note — dated by that measurement's own fetch time — instead of the card going blank. Last-known data never makes a
+  non-actionable row actionable. When
   `unavailable` means claude-swap deferred polling because a window is at 100%, CodexBar keeps that slot's last
   projected usage bars and names the exhausted window (5-hour session, 7-day weekly, and/or a scoped model such as
   Fable) plus its reset time — not "Usage fetch failed." A first refresh that is already `unavailable` with no
@@ -191,7 +197,16 @@ The accepted multi-account design in
   a plan badge.
 - Switching: an inactive account with usable source credentials shows “Switch Account…”. Clicking it runs exactly
   `cswap --switch-to <slot> --json`, validates the versioned result and requested slot, then refreshes both ambient
-  Claude usage and every claude-swap account card. Switches are serialized; no automatic switching occurs. While
+  Claude usage and every claude-swap account card.
+- Source-chosen targets: a “Switch Account” submenu lets claude-swap pick the destination itself — “Next Account”
+  (`cswap --switch --json`), “Account With Most Quota Left” (`--strategy best`), and “Next Account Not At Its Limit”
+  (`--strategy next-available`). Each case runs one fixed argument array chosen from a closed enum. A run that finds
+  no viable target reports `to: null` and surfaces as an error rather than a silent no-op; `already-active` stays a
+  successful outcome. The submenu is hidden when no inactive, actionable, non-disabled slot exists. Accounts held out
+  of rotation with `cswap disable` are marked “(disabled)”, stay valid explicit switch targets, and are never chosen
+  on the user's behalf — claude-swap's own rule.
+- Every switch is one explicit user click. Switches are serialized; claude-swap's background `auto` loop is never
+  started, and no automatic switching occurs. While
   claude-swap owns account presentation, the separate ambient OAuth action reads “Sign in with Claude Code…” and does
   not add or switch a claude-swap account.
 - Expired, missing, unknown, or Keychain-inaccessible credentials stay non-actionable. A failed switch remains visible

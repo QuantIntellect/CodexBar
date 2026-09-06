@@ -2,6 +2,9 @@
 
 ## 0.56.8 — Unreleased
 
+### Added
+- Claude (claude-swap): switch with claude-swap choosing the target — rotate, the account with the most quota left, or the next account not at its limit — from a new Switch Using claude-swap submenu. Each action is one explicit click running one fixed argument array; accounts held out of rotation with `cswap disable` stay explicit switch targets but are never chosen automatically.
+
 ### Fixed
 - Copilot: keep verified GitHub user IDs authoritative when matching legacy token accounts, preventing a matching login or display label from replacing a different resolved account.
 - OpenRouter: reject combined Activity token overflow before publishing history so malformed optional data cannot hide valid credits or key quota; share input/output total validation (extracted from #3272). Thanks @akshayprabhu200!
@@ -11,6 +14,10 @@
 - MiMo: skip malformed local session rows before deduplication so valid usage still refreshes the cache, preserving all token buckets and UTC daily/weekly totals with shared aggregation (#3448). Thanks @Lucenx9!
 - Claude: label model-specific weekly quotas with a translated weekly duration while preserving model names and CLI titles; correct swapped Vietnamese Weekly and missing-version labels (#3447). Thanks @gianpaj!
 - Packaging: select the bundled iCloud provisioning profile only for its upstream signing team, preserving alternate-team app/widget groups without incompatible CloudKit entitlements (extracted from #3372). Thanks @krazybean!
+- Claude (claude-swap): keep an account's last known usage bars when its live usage is unavailable (expired token, unreadable Keychain), instead of rendering an empty card while `cswap list` still shows numbers.
+- Claude (claude-swap): date account cards by claude-swap's own measurement time, so the age shown is the measurement's, not the refresh tick's.
+- Claude (claude-swap): show pay-as-you-go spend alongside the 5-hour and 7-day windows.
+- Claude (claude-swap): mark accounts disabled in claude-swap, and recognize the `foreign_credential` status from cswap 0.26 instead of reporting it as unrecognized.
 
 ## 0.56.7 — 2026-09-06
 

@@ -8,7 +8,8 @@ read_when:
 
 # Claude multi-account and status item decision
 
-Status: **Phase 1 account display implemented; Phase 2 explicit account activation accepted.**
+Status: **Phase 1 account display implemented; Phase 2 explicit account activation accepted;
+source-chosen switch targets proposed (see "Proposed: source-chosen switch targets").**
 
 Related: [#1756](https://github.com/steipete/CodexBar/issues/1756),
 [#1268](https://github.com/steipete/CodexBar/issues/1268), and the bounded Claude sign-in repair in
@@ -75,9 +76,19 @@ envelope. CodexBar does not need
 - Require `schemaVersion == 1`; reject unknown versions and partial top-level shapes.
 - Bound runtime and stdout, terminate on timeout, and retain the last successful snapshot with a stale marker.
 - Parse only slot number, active state, usage status, 5-hour/7-day percentages, optional `usage.scoped` display names
-  and percentages, reset timestamps, display-only `organizationName` (always present, may be empty), and optional
-  display-only `alias` when non-empty. Ignore malformed or unknown scoped rows without discarding valid account-wide
-  windows. Unknown extra JSON fields remain ignored. Empty `organizationName` is not an error; `alias` is not required.
+  and percentages, optional `usage.spend` (used, limit, percent, currency, reset), reset timestamps, the additive
+  `disabled` marker, measurement freshness (`usageFetchedAt`/`usageAgeSeconds`), the display-only `lastGoodUsage`
+  fallback with its own fetch time, display-only `organizationName` (always present, may be empty), and optional
+  display-only `alias` when non-empty. Every one of these is display-only: none is credential material, and none
+  changes which arguments the adapter runs. Ignore malformed or unknown scoped rows without discarding valid
+  account-wide windows. Additive sections (`usage.spend`, `lastGoodUsage`) parse leniently for the same reason: a
+  malformed one is dropped rather than raised, so it cannot suppress otherwise valid rate windows. Unknown extra JSON
+  fields remain ignored. Empty `organizationName` is not an error; `alias` is not required.
+- A row whose live `usage` is null but that carries `lastGoodUsage` renders its last known windows instead of an empty
+  card, dated by that measurement's own fetch time so the existing age label states its true age. Last-known data is
+  display-only; it never makes a non-actionable row actionable.
+- claude-swap's human `message` field is never parsed. It embeds the account email, which must not reach the UI through
+  a channel that bypasses Hide Personal Info; only the machine-readable `reason` token is retained.
 - Treat email, organization name, and alias as display-only. Never log or persist them. Respect Hide Personal Info.
   When two or more slots share an email, disambiguate with `email · organizationName` or `email · Account N`; a
   user-chosen alias wins. Unique emails stay email-only.
@@ -105,6 +116,25 @@ last refresh, adapter errors, and a link to the upstream project; CodexBar shoul
   list-refresh errors and preserve the last successful usage snapshots.
 - Keep expired, missing, unknown, and Keychain-inaccessible credential slots non-actionable. Never auto-switch, launch
   sessions, add/import/export/purge accounts, or mutate credentials directly.
+
+## Proposed: source-chosen switch targets
+
+Phase 2 activates one slot the user names. claude-swap's own menu bar additionally offers three switches where the tool
+picks the destination: rotate, the account with the most quota left, and the next account that is not at its limit.
+These are proposed as an extension to Phase 2, not a change to the credential boundary:
+
+- Each maps to exactly one fixed argument array — `cswap --switch [--strategy best|next-available] --json` — selected
+  from a closed enum. No free-form arguments, no shell, no config-defined passthrough.
+- Each is still started by one explicit click and runs one bounded transaction to natural exit, serialized against slot
+  switches so two credential transactions can never overlap. This is **not** claude-swap's background `auto` loop,
+  which stays out of scope.
+- A strategy run reports `to: null` when nothing viable exists; that is surfaced as an error rather than a silent
+  no-op. `switched: false` with a target (`already-active`) stays a successful outcome.
+- Accounts held out of rotation with `cswap disable` remain valid explicit switch targets but are never chosen on the
+  user's behalf, matching claude-swap's own rule. The actions are hidden entirely when no such target exists.
+
+This changes no storage, status item migration, process authority, or credential boundary: CodexBar still handles no
+credentials, reads no claude-swap or Claude Code storage, and adds no background switching.
 
 ## Provider-neutral account model
 
@@ -168,7 +198,9 @@ explicit “Switch Account…” action. No real credential, browser session, or
 
 1. The optional external `claude-swap` dependency is accepted for exact `cswap --list --json` execution and explicit
    `cswap --switch-to <slot> --json` activation.
-2. Automatic switching, account add/import/export/purge, and session launching stay out of scope.
+2. Automatic (background) switching, account add/import/export/purge, and session launching stay out of scope.
+   Explicit, user-initiated switches where claude-swap picks the destination slot are proposed separately above; they
+   add no background behavior and no new process authority.
 3. Provider-neutral account snapshots land before any per-account status item work.
 4. Per-account status items are capped at four and mutually exclusive with Merge Icons.
 5. Status item labels use aliases or privacy-safe ordinals, never email identity.
