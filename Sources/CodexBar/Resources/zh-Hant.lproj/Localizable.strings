@@ -1575,3 +1575,8 @@
 "menu_bar_layout_conditional_default_scoped_weekly" = "模型專屬每週已用超過 60%";
 "Spending cap, not balance" = "支出上限，並非餘額";
 "%@ weekly" = "%@ 每週";
+
+"Switch Using claude-swap" = "使用 claude-swap 切換";
+"Next Account" = "下一個帳戶";
+"Account With Most Quota Left" = "剩餘額度最多的帳戶";
+"Next Account Not At Its Limit" = "下一個未達上限的帳戶";

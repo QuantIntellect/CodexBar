@@ -7,6 +7,8 @@ struct ClaudeSwapTransientState {
     var lastError: String?
     var lastErrorAccountID: ProviderAccountIdentity?
     var switchingAccountID: ProviderAccountIdentity?
+    /// Set instead of `switchingAccountID` while claude-swap picks the target itself.
+    var switchingStrategy: ClaudeSwapSwitchStrategy?
     var task: Task<Void, Never>?
     var versionProbedPath: String?
     var versionProbeGeneration: UInt64 = 0
@@ -50,6 +52,7 @@ extension UsageStore {
             self.claudeSwapTransientState.lastError != nil ||
             self.claudeSwapTransientState.lastErrorAccountID != nil ||
             self.claudeSwapTransientState.switchingAccountID != nil ||
+            self.claudeSwapTransientState.switchingStrategy != nil ||
             self.claudeSwapTransientState.versionProbedPath != nil ||
             self.claudeSwapDetectedVersion != nil
         self.claudeSwapRefreshTask?.cancel()
@@ -60,6 +63,7 @@ extension UsageStore {
         self.claudeSwapTransientState.lastError = nil
         self.claudeSwapTransientState.lastErrorAccountID = nil
         self.claudeSwapTransientState.switchingAccountID = nil
+        self.claudeSwapTransientState.switchingStrategy = nil
         self.claudeSwapTransientState.versionProbedPath = nil
         self.claudeSwapTransientState.versionProbeGeneration &+= 1
         self.claudeSwapDetectedVersion = nil
@@ -134,6 +138,50 @@ extension UsageStore {
 
         let executablePath = self.settings.claudeSwapExecutablePath
         self.claudeSwapTransientState.switchingAccountID = accountID
+        self.runClaudeSwapSwitch(executablePath: executablePath, attributingErrorTo: accountID) {
+            _ = try await ClaudeSwapAccountReader.switchAccount(
+                executablePath: executablePath,
+                accountNumber: accountNumber)
+        }
+    }
+
+    /// Lets claude-swap choose the destination slot (rotate, most quota left, or
+    /// next account that is not at its limit).
+    ///
+    /// Still one explicit user action per switch — this does not start
+    /// claude-swap's background `auto` loop, and CodexBar still never touches
+    /// credentials. Requests share the same serialization as slot switches.
+    func switchClaudeSwapAccount(strategy: ClaudeSwapSwitchStrategy) {
+        guard self.claudeSwapTransientState.task == nil,
+              self.shouldFetchClaudeSwapAccounts(),
+              self.availableClaudeSwapStrategies().contains(strategy)
+        else {
+            return
+        }
+
+        let executablePath = self.settings.claudeSwapExecutablePath
+        self.claudeSwapTransientState.switchingStrategy = strategy
+        self.runClaudeSwapSwitch(executablePath: executablePath, attributingErrorTo: nil) {
+            _ = try await ClaudeSwapAccountReader.switchAccount(
+                executablePath: executablePath,
+                strategy: strategy)
+        }
+    }
+
+    /// Strategy switches only make sense when claude-swap has somewhere to go.
+    func availableClaudeSwapStrategies() -> [ClaudeSwapSwitchStrategy] {
+        guard self.shouldFetchClaudeSwapAccounts() else { return [] }
+        return ClaudeSwapSwitchMenuPlanner.availableStrategies(accounts: self.claudeSwapAccountSnapshots)
+    }
+
+    /// Shared body for both switch entry points: serialize the transaction, run
+    /// it to completion, then reconcile the ambient Claude snapshot with the
+    /// adapter's active-row marker.
+    private func runClaudeSwapSwitch(
+        executablePath: String,
+        attributingErrorTo accountID: ProviderAccountIdentity?,
+        operation: @escaping @Sendable () async throws -> Void)
+    {
         self.claudeSwapTransientState.lastError = nil
         self.claudeSwapTransientState.lastErrorAccountID = nil
         self.claudeSwapRevision &+= 1
@@ -141,9 +189,7 @@ extension UsageStore {
         self.claudeSwapTransientState.task = Task { @MainActor [weak self] in
             var switchError: String?
             do {
-                _ = try await ClaudeSwapAccountReader.switchAccount(
-                    executablePath: executablePath,
-                    accountNumber: accountNumber)
+                try await operation()
             } catch {
                 switchError = (error as? LocalizedError)?.errorDescription
                     ?? error.localizedDescription
@@ -158,6 +204,7 @@ extension UsageStore {
             let configurationIsCurrent = self.isCurrentClaudeSwapConfiguration(executablePath: executablePath)
             self.claudeSwapTransientState.task = nil
             self.claudeSwapTransientState.switchingAccountID = nil
+            self.claudeSwapTransientState.switchingStrategy = nil
             if configurationIsCurrent {
                 self.claudeSwapTransientState.lastError = switchError
                 self.claudeSwapTransientState.lastErrorAccountID = switchError == nil ? nil : accountID

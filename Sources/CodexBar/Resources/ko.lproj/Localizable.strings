@@ -1513,3 +1513,8 @@
 "menu_bar_layout_conditional_default_scoped_weekly" = "모델별 주간 60% 초과 사용";
 "Spending cap, not balance" = "지출 한도이며 잔액이 아닙니다";
 "%@ weekly" = "%@ 주간";
+
+"Switch Using claude-swap" = "claude-swap으로 전환";
+"Next Account" = "다음 계정";
+"Account With Most Quota Left" = "남은 할당량이 가장 많은 계정";
+"Next Account Not At Its Limit" = "한도에 도달하지 않은 다음 계정";

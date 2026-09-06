@@ -27,6 +27,49 @@ extension StatusItemController {
             to: menu,
             captureMenu: captureMenu,
             context: context)
+        self.addClaudeSwapSwitchStrategyItems(to: menu)
+    }
+
+    /// Lets claude-swap pick the destination itself, mirroring the rotate /
+    /// best / next-available actions its own menu bar offers. Each item is one
+    /// explicit click running one fixed argument array; none of them starts
+    /// claude-swap's background auto-switch loop.
+    func addClaudeSwapSwitchStrategyItems(to menu: NSMenu) {
+        let strategies = self.store.availableClaudeSwapStrategies()
+        guard !strategies.isEmpty else { return }
+        let submenu = NSMenu()
+        let switchInFlight = self.store.claudeSwapTransientState.task != nil
+        for strategy in strategies {
+            let item = NSMenuItem(
+                title: Self.claudeSwapStrategyTitle(strategy),
+                action: #selector(self.switchClaudeSwapAccountWithStrategy(_:)),
+                keyEquivalent: "")
+            item.target = self
+            item.representedObject = strategy.rawValue
+            item.isEnabled = !switchInFlight
+            submenu.addItem(item)
+        }
+        // Distinct from the per-card "Switch Account…" action, which names its own target.
+        let parent = NSMenuItem(title: L("Switch Using claude-swap"), action: nil, keyEquivalent: "")
+        parent.isEnabled = !switchInFlight
+        parent.submenu = submenu
+        menu.addItem(parent)
+    }
+
+    static func claudeSwapStrategyTitle(_ strategy: ClaudeSwapSwitchStrategy) -> String {
+        switch strategy {
+        case .rotate: L("Next Account")
+        case .best: L("Account With Most Quota Left")
+        case .nextAvailable: L("Next Account Not At Its Limit")
+        }
+    }
+
+    @objc private func switchClaudeSwapAccountWithStrategy(_ sender: NSMenuItem) {
+        guard let rawValue = sender.representedObject as? String,
+              let strategy = ClaudeSwapSwitchStrategy(rawValue: rawValue)
+        else { return }
+        self.advanceMenuInteraction(for: sender.menu)
+        self.store.switchClaudeSwapAccount(strategy: strategy)
     }
 
     private func addStackedClaudeSwapMenuCards(
@@ -48,6 +91,7 @@ extension StatusItemController {
                 guard cardRows.indices.contains(index) else { return nil }
                 return self?.claudeSwapAccountSwitchAction(cardRows[index].account, menu: captureMenu)
             })
+        self.addClaudeSwapSwitchStrategyItems(to: menu)
     }
 
     private func claudeSwapCardModel(for account: ProviderAccountUsageSnapshot) -> UsageMenuCardView.Model? {

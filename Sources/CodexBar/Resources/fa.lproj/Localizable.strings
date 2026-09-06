@@ -1548,3 +1548,8 @@
 "menu_bar_layout_conditional_default_scoped_weekly" = "پنجره هفتگی مدل بیش از ۶۰٪";
 "Spending cap, not balance" = "سقف هزینه، نه موجودی";
 "%@ weekly" = "%@ هفتگی";
+
+"Switch Using claude-swap" = "تعویض با claude-swap";
+"Next Account" = "حساب بعدی";
+"Account With Most Quota Left" = "حساب با بیشترین سهمیه باقی‌مانده";
+"Next Account Not At Its Limit" = "حساب بعدی که به سقف خود نرسیده است";

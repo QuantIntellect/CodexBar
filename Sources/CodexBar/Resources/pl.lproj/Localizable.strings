@@ -1547,3 +1547,8 @@
 "menu_bar_layout_conditional_default_scoped_weekly" = "Tydzień modelu powyżej 60% zużycia";
 "Spending cap, not balance" = "Limit wydatków, nie saldo";
 "%@ weekly" = "%@ tygodniowo";
+
+"Switch Using claude-swap" = "Przełącz za pomocą claude-swap";
+"Next Account" = "Następne konto";
+"Account With Most Quota Left" = "Konto z największym pozostałym limitem";
+"Next Account Not At Its Limit" = "Następne konto, które nie osiągnęło limitu";

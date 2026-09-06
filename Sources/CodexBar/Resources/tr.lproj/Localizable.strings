@@ -1546,3 +1546,8 @@
 "menu_bar_layout_conditional_default_scoped_weekly" = "Model haftasının %60'ından fazlası kullanıldı";
 "Spending cap, not balance" = "Harcama sınırı, bakiye değil";
 "%@ weekly" = "%@ haftalık";
+
+"Switch Using claude-swap" = "claude-swap ile değiştir";
+"Next Account" = "Sonraki Hesap";
+"Account With Most Quota Left" = "En Çok Kotası Kalan Hesap";
+"Next Account Not At Its Limit" = "Sınırına Ulaşmamış Sonraki Hesap";

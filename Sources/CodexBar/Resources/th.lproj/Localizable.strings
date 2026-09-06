@@ -1548,3 +1548,8 @@
 "menu_bar_layout_conditional_default_scoped_weekly" = "รายสัปดาห์ตามโมเดลเกิน 60%";
 "Spending cap, not balance" = "เพดานการใช้จ่าย ไม่ใช่ยอดคงเหลือ";
 "%@ weekly" = "%@ รายสัปดาห์";
+
+"Switch Using claude-swap" = "สลับด้วย claude-swap";
+"Next Account" = "บัญชีถัดไป";
+"Account With Most Quota Left" = "บัญชีที่มีโควตาเหลือมากที่สุด";
+"Next Account Not At Its Limit" = "บัญชีถัดไปที่ยังไม่ถึงขีดจำกัด";

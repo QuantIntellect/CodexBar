@@ -68,6 +68,32 @@ public enum ClaudeSwapAccountReader {
         return parsed
     }
 
+    /// Lets claude-swap choose the target itself (rotate, most quota left, or
+    /// next account that is not at its limit).
+    ///
+    /// Still an explicit, user-initiated switch: the strategy only decides
+    /// *which* slot claude-swap activates, and each case runs one fixed
+    /// argument array. This is not claude-swap's background `auto` loop, and
+    /// CodexBar still supplies no credentials and accepts no free-form
+    /// arguments. A run that finds no viable target reports `to: null` and is
+    /// surfaced as `noViableTarget` rather than a silent no-op.
+    public static func switchAccount(
+        executablePath: String,
+        strategy: ClaudeSwapSwitchStrategy) async throws
+        -> ClaudeSwapAccountSwitchResult
+    {
+        let result = try await self.runCredentialTransaction(
+            executablePath: executablePath,
+            arguments: strategy.arguments,
+            acceptsNonZeroExit: true,
+            label: "claude-swap switch (\(strategy.rawValue))")
+        let parsed = try ClaudeSwapSwitchParser.parse(Data(result.utf8))
+        guard parsed.toAccountNumber != nil else {
+            throw ClaudeSwapSwitchParserError.noViableTarget(reason: parsed.reason)
+        }
+        return parsed
+    }
+
     /// Best-effort version probe (`cswap --version` prints `cswap <version>`).
     public static func readVersion(
         executablePath: String,

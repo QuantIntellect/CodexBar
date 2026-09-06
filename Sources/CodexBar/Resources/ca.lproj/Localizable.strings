@@ -1546,3 +1546,8 @@
 "menu_bar_layout_conditional_default_scoped_weekly" = "Setmanal amb àmbit per damunt del 60%";
 "Spending cap, not balance" = "Límit de despesa, no saldo";
 "%@ weekly" = "%@ setmanal";
+
+"Switch Using claude-swap" = "Canvia amb claude-swap";
+"Next Account" = "Compte següent";
+"Account With Most Quota Left" = "Compte amb més quota restant";
+"Next Account Not At Its Limit" = "Següent compte que no ha arribat al límit";

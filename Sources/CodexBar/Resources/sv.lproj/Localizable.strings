@@ -1543,3 +1543,8 @@
 "menu_bar_layout_conditional_default_scoped_weekly" = "Modellvecka över 60 % använt";
 "Spending cap, not balance" = "Utgiftstak, inte saldo";
 "%@ weekly" = "%@ per vecka";
+
+"Switch Using claude-swap" = "Växla med claude-swap";
+"Next Account" = "Nästa konto";
+"Account With Most Quota Left" = "Konto med mest kvot kvar";
+"Next Account Not At Its Limit" = "Nästa konto som inte nått sin gräns";

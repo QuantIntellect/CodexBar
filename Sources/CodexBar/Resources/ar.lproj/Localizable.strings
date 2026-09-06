@@ -1548,3 +1548,8 @@
 "menu_bar_layout_conditional_default_scoped_weekly" = "نافذة الطراز الأسبوعية فوق 60٪";
 "Spending cap, not balance" = "حد الإنفاق، وليس الرصيد";
 "%@ weekly" = "%@ أسبوعيًا";
+
+"Switch Using claude-swap" = "التبديل باستخدام claude-swap";
+"Next Account" = "الحساب التالي";
+"Account With Most Quota Left" = "الحساب صاحب أكبر حصة متبقية";
+"Next Account Not At Its Limit" = "الحساب التالي الذي لم يبلغ حده";

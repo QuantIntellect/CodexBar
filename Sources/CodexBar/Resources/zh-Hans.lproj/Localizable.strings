@@ -1556,3 +1556,8 @@
 "now" = "现在";
 "Spending cap, not balance" = "支出上限，并非余额";
 "%@ weekly" = "%@ 每周";
+
+"Switch Using claude-swap" = "使用 claude-swap 切换";
+"Next Account" = "下一个账户";
+"Account With Most Quota Left" = "剩余额度最多的账户";
+"Next Account Not At Its Limit" = "下一个未达上限的账户";

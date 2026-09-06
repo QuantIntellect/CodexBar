@@ -1544,3 +1544,8 @@
 "menu_bar_layout_conditional_default_scoped_weekly" = "Тижневе вікно моделі понад 60 %";
 "Spending cap, not balance" = "Ліміт витрат, не баланс";
 "%@ weekly" = "%@ за тиждень";
+
+"Switch Using claude-swap" = "Перемкнути через claude-swap";
+"Next Account" = "Наступний обліковий запис";
+"Account With Most Quota Left" = "Обліковий запис із найбільшим залишком квоти";
+"Next Account Not At Its Limit" = "Наступний обліковий запис, що не досяг ліміту";
