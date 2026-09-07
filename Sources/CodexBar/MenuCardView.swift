@@ -171,6 +171,10 @@ struct UsageMenuCardView: View {
         let subtitleStyle: SubtitleStyle
         var usesLiveSubtitle: Bool = false
         let planText: String?
+        /// How the plan/status label should read. Set after construction by
+        /// callers that know the label is a state rather than a plan name, so
+        /// "Active" and a landed switch stand out from ordinary secondary text.
+        var planEmphasis: PlanEmphasis = .none
         let metrics: [Metric]
         let usageNotes: [String]
         var subscriptionNotes: [String] = []
@@ -389,7 +393,8 @@ private struct UsageMenuCardHeaderView: View {
                         }
                     }
                     .font(.footnote)
-                    .foregroundStyle(MenuHighlightStyle.secondary(self.isHighlighted))
+                    .fontWeight(self.model.planEmphasis.isEmphasized ? .semibold : .regular)
+                    .foregroundStyle(self.model.planEmphasis.color(highlighted: self.isHighlighted))
                     .lineLimit(1)
                 }
             }

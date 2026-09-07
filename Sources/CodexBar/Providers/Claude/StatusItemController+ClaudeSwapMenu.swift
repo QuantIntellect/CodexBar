@@ -107,6 +107,19 @@ extension StatusItemController {
     }
 
     private func claudeSwapCardModel(for account: ProviderAccountUsageSnapshot) -> UsageMenuCardView.Model? {
+        var model = self.baseClaudeSwapCardModel(for: account)
+        // The claude-swap label is account state, not a plan name: give the
+        // active account and a landed switch visible weight so the current
+        // account is identifiable at a glance among identical-looking cards.
+        model?.planEmphasis = switch self.claudeSwapAccountAction(account) {
+        case .active: .active
+        case .switchedConfirmation, .alreadyActiveConfirmation: .success
+        case .switching, .offerSwitch, .none: .none
+        }
+        return model
+    }
+
+    private func baseClaudeSwapCardModel(for account: ProviderAccountUsageSnapshot) -> UsageMenuCardView.Model? {
         self.menuCardModel(
             for: .claude,
             snapshotOverride: account.snapshot,
@@ -124,15 +137,18 @@ extension StatusItemController {
             sourceLabelOverride: ClaudeSwapAccountProjection.sourceLabel)
     }
 
-    private func claudeSwapAccountActionLabel(_ account: ProviderAccountUsageSnapshot) -> String? {
+    private func claudeSwapAccountAction(_ account: ProviderAccountUsageSnapshot) -> ClaudeSwapAccountAction {
         let transient = self.store.claudeSwapTransientState
-        let action = ClaudeSwapAccountActionPlanner.action(
+        return ClaudeSwapAccountActionPlanner.action(
             for: account,
             outcome: transient.lastSwitchOutcome,
             switchingAccountID: transient.switchingAccountID,
             hasSwitchInFlight: transient.task != nil,
             now: Date())
-        return switch action {
+    }
+
+    private func claudeSwapAccountActionLabel(_ account: ProviderAccountUsageSnapshot) -> String? {
+        switch self.claudeSwapAccountAction(account) {
         case .switchedConfirmation: L("Switched")
         case .alreadyActiveConfirmation: L("Already Active")
         case .active: L("Active")

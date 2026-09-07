@@ -218,16 +218,20 @@ extension UsageStore {
             }
 
             guard let self else { return }
+
+            // Re-list claude-swap before reconciling ambient Claude usage. The
+            // adapter owns the active marker and the numbers the account cards
+            // render, and re-listing is one short subprocess; the ambient fetch
+            // probes OAuth, the CLI and the web and can take seconds. Refreshing
+            // ambient first left the cards showing the pre-switch state for that
+            // whole window, so a completed switch read as a click that did
+            // nothing. The ambient reconcile still happens, just afterwards.
             if self.isCurrentClaudeSwapConfiguration(executablePath: executablePath) {
-                // Claude Code owns the ambient credential, so reconcile both
-                // the provider snapshot and the adapter's active-row marker.
-                await self.refreshProvider(.claude)
+                await self.refreshClaudeSwapAccounts()
             }
-            let configurationIsCurrent = self.isCurrentClaudeSwapConfiguration(executablePath: executablePath)
-            self.claudeSwapTransientState.task = nil
             self.claudeSwapTransientState.switchingAccountID = nil
             self.claudeSwapTransientState.switchingStrategy = nil
-            if configurationIsCurrent {
+            if self.isCurrentClaudeSwapConfiguration(executablePath: executablePath) {
                 self.claudeSwapTransientState.lastSwitchOutcome = outcome
                 // An error with no owning account card (any strategy switch, and
                 // any blocked outcome) is reported on the section instead, so it
@@ -242,6 +246,25 @@ extension UsageStore {
                     self.claudeSwapTransientState.lastSectionError = switchError
                 }
             }
+            self.claudeSwapRevision &+= 1
+
+            // Claude Code owns the ambient credential, so it still has to be
+            // reconciled. The transaction marker is held until that finishes so
+            // two credential writes can never overlap.
+            if self.isCurrentClaudeSwapConfiguration(executablePath: executablePath) {
+                await self.refreshProvider(.claude)
+            }
+            // The adapter configuration can change while either refresh runs.
+            // Re-check after the awaits rather than trusting a value read before
+            // them: a result that no longer belongs to the current configuration
+            // must not stay on screen.
+            if !self.isCurrentClaudeSwapConfiguration(executablePath: executablePath) {
+                self.claudeSwapTransientState.lastError = nil
+                self.claudeSwapTransientState.lastErrorAccountID = nil
+                self.claudeSwapTransientState.lastSectionError = nil
+                self.claudeSwapTransientState.lastSwitchOutcome = nil
+            }
+            self.claudeSwapTransientState.task = nil
             self.claudeSwapRevision &+= 1
         }
     }
