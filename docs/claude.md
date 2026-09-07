@@ -205,6 +205,13 @@ The accepted multi-account design in
   successful outcome. The submenu is hidden when no inactive, actionable, non-disabled slot exists. Accounts held out
   of rotation with `cswap disable` are marked “(disabled)”, stay valid explicit switch targets, and are never chosen
   on the user's behalf — claude-swap's own rule.
+- Outcome reporting: `switched: false` does not mean the request succeeded. claude-swap returns the *current* account
+  as `to` for blocked attempts (`candidates-exhausted`, `usage-unavailable`, `no-valid-target`, `only-one-account`,
+  `unmanaged-account`) as well as for benign no-ops (`already-active`, `already-best`), so only `reason` separates
+  them. Benign reasons confirm on the card; every other non-switch — including a reason a future claude-swap release
+  adds — is reported as a failure with its explanation, next to the switch actions. Strategy switches have no
+  requested slot, so their errors render on that section rather than on an account card, where they would have nowhere
+  to appear.
 - Confirmation: when a switch completes, the account card it landed on reports “Switched”, or “Already Active” when
   claude-swap reported that slot was already active. The confirmation replaces that card's action label for
   `ClaudeSwapAccountActionPlanner.confirmationWindow` (90s) and is superseded by any newer switch, so it survives the

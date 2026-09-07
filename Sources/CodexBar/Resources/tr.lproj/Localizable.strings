@@ -1553,3 +1553,4 @@
 "Next Account Not At Its Limit" = "Sınırına Ulaşmamış Sonraki Hesap";
 "Switched" = "Değiştirildi";
 "Already Active" = "Zaten Etkin";
+"Switch failed: %@" = "Değiştirme başarısız: %@";

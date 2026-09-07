@@ -1549,3 +1549,4 @@
 "Next Account Not At Its Limit" = "Siguiente cuenta que no ha alcanzado su límite";
 "Switched" = "Cambiado";
 "Already Active" = "Ya activo";
+"Switch failed: %@" = "Error al cambiar: %@";

@@ -1551,3 +1551,4 @@
 "Next Account Not At Its Limit" = "Наступний обліковий запис, що не досяг ліміту";
 "Switched" = "Перемкнено";
 "Already Active" = "Уже активний";
+"Switch failed: %@" = "Не вдалося перемкнути: %@";

@@ -1554,3 +1554,4 @@
 "Next Account Not At Its Limit" = "Next Account Not At Its Limit";
 "Switched" = "Switched";
 "Already Active" = "Already Active";
+"Switch failed: %@" = "Switch failed: %@";

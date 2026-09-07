@@ -1552,3 +1552,4 @@
 "Next Account Not At Its Limit" = "Tài khoản tiếp theo chưa đạt giới hạn";
 "Switched" = "Đã chuyển";
 "Already Active" = "Đã hoạt động";
+"Switch failed: %@" = "Chuyển thất bại: %@";

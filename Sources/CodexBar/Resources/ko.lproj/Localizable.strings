@@ -1520,3 +1520,4 @@
 "Next Account Not At Its Limit" = "한도에 도달하지 않은 다음 계정";
 "Switched" = "전환됨";
 "Already Active" = "이미 활성";
+"Switch failed: %@" = "전환 실패: %@";

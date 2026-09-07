@@ -1550,3 +1550,4 @@
 "Next Account Not At Its Limit" = "Volgend account dat zijn limiet niet heeft bereikt";
 "Switched" = "Gewisseld";
 "Already Active" = "Al actief";
+"Switch failed: %@" = "Wisselen mislukt: %@";

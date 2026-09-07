@@ -1553,3 +1553,4 @@
 "Next Account Not At Its Limit" = "Següent compte que no ha arribat al límit";
 "Switched" = "Canviat";
 "Already Active" = "Ja actiu";
+"Switch failed: %@" = "Ha fallat el canvi: %@";

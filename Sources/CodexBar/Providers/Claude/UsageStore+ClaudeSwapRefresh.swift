@@ -11,6 +11,10 @@ struct ClaudeSwapTransientState {
     var switchingStrategy: ClaudeSwapSwitchStrategy?
     /// The last completed switch, so the card it landed on can confirm it.
     var lastSwitchOutcome: ClaudeSwapSwitchOutcome?
+    /// A failed or blocked switch that belongs to no single account card.
+    /// Strategy switches have no requested slot, so without this their errors
+    /// would have nowhere to render and would vanish when the menu closes.
+    var lastSectionError: String?
     var task: Task<Void, Never>?
     var versionProbedPath: String?
     var versionProbeGeneration: UInt64 = 0
@@ -56,6 +60,7 @@ extension UsageStore {
             self.claudeSwapTransientState.switchingAccountID != nil ||
             self.claudeSwapTransientState.switchingStrategy != nil ||
             self.claudeSwapTransientState.lastSwitchOutcome != nil ||
+            self.claudeSwapTransientState.lastSectionError != nil ||
             self.claudeSwapTransientState.versionProbedPath != nil ||
             self.claudeSwapDetectedVersion != nil
         self.claudeSwapRefreshTask?.cancel()
@@ -68,6 +73,7 @@ extension UsageStore {
         self.claudeSwapTransientState.switchingAccountID = nil
         self.claudeSwapTransientState.switchingStrategy = nil
         self.claudeSwapTransientState.lastSwitchOutcome = nil
+        self.claudeSwapTransientState.lastSectionError = nil
         self.claudeSwapTransientState.versionProbedPath = nil
         self.claudeSwapTransientState.versionProbeGeneration &+= 1
         self.claudeSwapDetectedVersion = nil
@@ -188,8 +194,9 @@ extension UsageStore {
     {
         self.claudeSwapTransientState.lastError = nil
         self.claudeSwapTransientState.lastErrorAccountID = nil
-        // A new switch supersedes the previous one's confirmation.
+        // A new switch supersedes the previous one's confirmation and error.
         self.claudeSwapTransientState.lastSwitchOutcome = nil
+        self.claudeSwapTransientState.lastSectionError = nil
         self.claudeSwapRevision &+= 1
 
         self.claudeSwapTransientState.task = Task { @MainActor [weak self] in
@@ -200,6 +207,11 @@ extension UsageStore {
                 // A strategy switch only names its destination in the result, so
                 // the confirmation target is derived here rather than up front.
                 outcome = ClaudeSwapSwitchOutcome.from(result: result, completedAt: Date())
+                // claude-swap reports the current account as the destination for
+                // blocked attempts too, so a non-null target is not success.
+                if case let .blocked(reason) = ClaudeSwapSwitchResultClassifier.classify(result) {
+                    switchError = ClaudeSwapSwitchResultClassifier.blockedExplanation(reason: reason)
+                }
             } catch {
                 switchError = (error as? LocalizedError)?.errorDescription
                     ?? error.localizedDescription
@@ -216,9 +228,19 @@ extension UsageStore {
             self.claudeSwapTransientState.switchingAccountID = nil
             self.claudeSwapTransientState.switchingStrategy = nil
             if configurationIsCurrent {
-                self.claudeSwapTransientState.lastError = switchError
-                self.claudeSwapTransientState.lastErrorAccountID = switchError == nil ? nil : accountID
                 self.claudeSwapTransientState.lastSwitchOutcome = outcome
+                // An error with no owning account card (any strategy switch, and
+                // any blocked outcome) is reported on the section instead, so it
+                // cannot silently disappear.
+                if let switchError, let accountID {
+                    self.claudeSwapTransientState.lastError = switchError
+                    self.claudeSwapTransientState.lastErrorAccountID = accountID
+                    self.claudeSwapTransientState.lastSectionError = nil
+                } else {
+                    self.claudeSwapTransientState.lastError = nil
+                    self.claudeSwapTransientState.lastErrorAccountID = nil
+                    self.claudeSwapTransientState.lastSectionError = switchError
+                }
             }
             self.claudeSwapRevision &+= 1
         }

@@ -132,6 +132,48 @@ struct ClaudeSwapLastGoodProjectionTests {
         #expect(account.snapshot?.providerCost?.used == 1)
     }
 
+    /// An `unavailable` row retains the previous snapshot when a window is still
+    /// exhausted. If that previous snapshot was itself a last-known fallback, the
+    /// retention must carry the provenance forward — otherwise surviving one more
+    /// refresh silently promotes stale data to live and it reaches the bar icon.
+    @Test
+    func `retaining a last known snapshot does not promote it to live`() throws {
+        let resetsAt = self.now.addingTimeInterval(3600)
+        let exhausted = ClaudeSwapLastGoodUsage(
+            measurement: ClaudeSwapUsageMeasurement(
+                fiveHour: ClaudeSwapUsageWindow(usedPercent: 100, resetsAt: resetsAt),
+                sevenDay: nil),
+            freshness: ClaudeSwapUsageFreshness(fetchedAt: self.fetchedAt, ageSeconds: 1600))
+
+        // First pass: no live usage, so the card falls back to the last known one.
+        let expired = ClaudeSwapAccountRow(
+            number: 1,
+            email: "a@b.c",
+            isActive: false,
+            usageStatus: .tokenExpired,
+            fiveHour: nil,
+            sevenDay: nil,
+            lastGoodUsage: exhausted)
+        let first = try #require(self.snapshots(for: expired).first)
+        #expect(first.usesLastKnownUsage)
+
+        // Second pass: claude-swap defers polling, and retention keeps that snapshot.
+        let deferred = ClaudeSwapAccountRow(
+            number: 1,
+            email: "a@b.c",
+            isActive: false,
+            usageStatus: .unavailable,
+            fiveHour: nil,
+            sevenDay: nil)
+        let retained = try #require(ClaudeSwapAccountProjection.accountSnapshots(
+            from: ClaudeSwapAccountList(activeAccountNumber: nil, accounts: [deferred]),
+            previousAccounts: [first],
+            now: self.now).first)
+
+        #expect(retained.snapshot?.primary?.usedPercent == 100)
+        #expect(retained.usesLastKnownUsage, "retention must not promote a fallback to live data")
+    }
+
     @Test
     func `a disabled account is marked but stays an explicit switch target`() throws {
         let account = try #require(self.snapshots(for: ClaudeSwapAccountRow(

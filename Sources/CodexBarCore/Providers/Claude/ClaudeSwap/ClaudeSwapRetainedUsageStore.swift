@@ -96,6 +96,11 @@ public enum ClaudeSwapRetainedUsageStore {
         var secondary: RateWindow?
         var extraRateWindows: [NamedRateWindow]?
         var updatedAt: Date
+        /// Provenance must survive the disk round-trip; without it a relaunch
+        /// would promote a retained last-known measurement to live data.
+        /// Absent in payloads written before this field existed: those predate
+        /// the fallback entirely, so decoding them as live is correct.
+        var usesLastKnownUsage: Bool?
 
         init?(account: ProviderAccountUsageSnapshot) {
             guard account.id.source == ClaudeSwapAccountProjection.sourceName,
@@ -114,6 +119,7 @@ public enum ClaudeSwapRetainedUsageStore {
             self.secondary = snapshot.secondary
             self.extraRateWindows = snapshot.extraRateWindows
             self.updatedAt = snapshot.updatedAt
+            self.usesLastKnownUsage = account.usesLastKnownUsage ? true : nil
         }
 
         var account: ProviderAccountUsageSnapshot {
@@ -124,6 +130,7 @@ public enum ClaudeSwapRetainedUsageStore {
                 provider: .claude,
                 displayLabel: "",
                 isActive: false,
+                usesLastKnownUsage: self.usesLastKnownUsage ?? false,
                 snapshot: UsageSnapshot(
                     primary: self.primary,
                     secondary: self.secondary,

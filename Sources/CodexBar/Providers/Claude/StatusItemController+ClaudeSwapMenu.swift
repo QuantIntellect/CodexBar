@@ -28,6 +28,7 @@ extension StatusItemController {
             captureMenu: captureMenu,
             context: context)
         self.addClaudeSwapSwitchStrategyItems(to: menu)
+        self.addClaudeSwapSectionError(to: menu)
     }
 
     /// Lets claude-swap pick the destination itself, mirroring the rotate /
@@ -54,6 +55,16 @@ extension StatusItemController {
         parent.isEnabled = !switchInFlight
         parent.submenu = submenu
         menu.addItem(parent)
+    }
+
+    /// A failed or blocked switch that belongs to no single account card.
+    /// Rendered next to the strategy actions so "nothing changed" always comes
+    /// with its reason instead of disappearing when the menu closes.
+    func addClaudeSwapSectionError(to menu: NSMenu) {
+        guard let message = self.store.claudeSwapTransientState.lastSectionError else { return }
+        let item = NSMenuItem(title: L("Switch failed: %@", message), action: nil, keyEquivalent: "")
+        item.isEnabled = false
+        menu.addItem(item)
     }
 
     static func claudeSwapStrategyTitle(_ strategy: ClaudeSwapSwitchStrategy) -> String {
@@ -92,6 +103,7 @@ extension StatusItemController {
                 return self?.claudeSwapAccountSwitchAction(cardRows[index].account, menu: captureMenu)
             })
         self.addClaudeSwapSwitchStrategyItems(to: menu)
+        self.addClaudeSwapSectionError(to: menu)
     }
 
     private func claudeSwapCardModel(for account: ProviderAccountUsageSnapshot) -> UsageMenuCardView.Model? {

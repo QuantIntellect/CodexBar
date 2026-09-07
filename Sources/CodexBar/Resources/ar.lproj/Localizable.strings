@@ -1555,3 +1555,4 @@
 "Next Account Not At Its Limit" = "الحساب التالي الذي لم يبلغ حده";
 "Switched" = "تم التبديل";
 "Already Active" = "نشط بالفعل";
+"Switch failed: %@" = "فشل التبديل: %@";

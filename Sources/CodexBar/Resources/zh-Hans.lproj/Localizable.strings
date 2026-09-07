@@ -1563,3 +1563,4 @@
 "Next Account Not At Its Limit" = "下一个未达上限的账户";
 "Switched" = "已切换";
 "Already Active" = "已是当前账户";
+"Switch failed: %@" = "切换失败：%@";

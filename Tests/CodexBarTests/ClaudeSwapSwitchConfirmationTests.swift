@@ -120,6 +120,80 @@ struct ClaudeSwapSwitchConfirmationTests {
         #expect(self.action(for: self.account(slot: 1, isActive: true)) == .active)
     }
 
+    private func result(
+        switched: Bool,
+        to: Int?,
+        reason: String) -> ClaudeSwapAccountSwitchResult
+    {
+        ClaudeSwapAccountSwitchResult(
+            switched: switched,
+            fromAccountNumber: 1,
+            toAccountNumber: to,
+            reason: reason)
+    }
+
+    /// claude-swap reports the *current* account as `to` for blocked attempts as
+    /// well as benign no-ops, so a non-null destination is not success on its own.
+    /// See cswap 0.26.0 `_switch_noop` call sites.
+    @Test
+    func `blocked outcomes are not confirmed as already active`() {
+        for reason in [
+            "candidates-exhausted",
+            "usage-unavailable",
+            "no-valid-target",
+            "only-one-account",
+            "unmanaged-account",
+            "some-future-reason",
+        ] {
+            let result = self.result(switched: false, to: 2, reason: reason)
+            #expect(
+                ClaudeSwapSwitchResultClassifier.classify(result) == .blocked(reason: reason),
+                "\(reason) must not read as a successful stay-put")
+            #expect(
+                ClaudeSwapSwitchOutcome.from(result: result, completedAt: self.now) == nil,
+                "\(reason) must not produce a confirmation")
+        }
+    }
+
+    @Test
+    func `deliberate stay put outcomes stay benign`() {
+        for reason in ["already-active", "already-best"] {
+            let result = self.result(switched: false, to: 2, reason: reason)
+            #expect(ClaudeSwapSwitchResultClassifier.classify(result) == .stayedPut(slot: 2, reason: reason))
+            #expect(ClaudeSwapSwitchOutcome.from(result: result, completedAt: self.now)?.kind == .alreadyActive)
+        }
+    }
+
+    @Test
+    func `a real move classifies as switched whatever the reason reads`() {
+        #expect(ClaudeSwapSwitchResultClassifier.classify(
+            self.result(switched: true, to: 3, reason: "switched")) == .switched(slot: 3))
+    }
+
+    @Test
+    func `reason matching ignores case and surrounding whitespace`() {
+        #expect(ClaudeSwapSwitchResultClassifier.classify(
+            self.result(switched: false, to: 2, reason: "  Already-Active ")) ==
+            .stayedPut(slot: 2, reason: "already-active"))
+    }
+
+    @Test
+    func `every blocked reason explains itself`() {
+        for reason in [
+            "candidates-exhausted",
+            "usage-unavailable",
+            "no-valid-target",
+            "only-one-account",
+            "unmanaged-account",
+        ] {
+            let text = ClaudeSwapSwitchResultClassifier.blockedExplanation(reason: reason)
+            #expect(!text.isEmpty)
+            #expect(!text.contains(reason), "\(reason) should read as prose, not a raw token")
+        }
+        // An unrecognized reason is still reported rather than swallowed.
+        #expect(ClaudeSwapSwitchResultClassifier.blockedExplanation(reason: "brand-new").contains("brand-new"))
+    }
+
     @Test
     func `an outcome is derived from the slot claude-swap reported`() throws {
         let switched = try #require(ClaudeSwapSwitchOutcome.from(

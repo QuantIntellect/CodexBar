@@ -164,7 +164,10 @@ public enum ClaudeSwapAccountProjection {
             }
             guard row.usageStatus == .unavailable else { return .none }
             if let retained = self.retainedAtLimitSnapshot(previous, matching: row, now: now) {
-                return .live(retained)
+                // Retention carries the previous row's provenance forward. A
+                // retained fallback is still a last-known measurement, and must
+                // not be promoted to live just by surviving another refresh.
+                return previous?.usesLastKnownUsage == true ? .lastKnown(retained) : .live(retained)
             }
             return .lastKnown(self.lastGoodSnapshot(for: row))
         case .tokenExpired, .reloginRequired, .apiKey, .keychainUnavailable, .noCredentials,

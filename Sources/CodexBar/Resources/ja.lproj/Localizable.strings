@@ -1551,3 +1551,4 @@
 "Next Account Not At Its Limit" = "上限に達していない次のアカウント";
 "Switched" = "切り替えました";
 "Already Active" = "すでにアクティブ";
+"Switch failed: %@" = "切り替えに失敗しました: %@";
