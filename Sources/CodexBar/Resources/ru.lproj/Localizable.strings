@@ -1550,3 +1550,5 @@
 "Next Account" = "Следующая учётная запись";
 "Account With Most Quota Left" = "Учётная запись с наибольшим остатком квоты";
 "Next Account Not At Its Limit" = "Следующая учётная запись, не достигшая лимита";
+"Switched" = "Переключено";
+"Already Active" = "Уже активна";

@@ -9,6 +9,8 @@ struct ClaudeSwapTransientState {
     var switchingAccountID: ProviderAccountIdentity?
     /// Set instead of `switchingAccountID` while claude-swap picks the target itself.
     var switchingStrategy: ClaudeSwapSwitchStrategy?
+    /// The last completed switch, so the card it landed on can confirm it.
+    var lastSwitchOutcome: ClaudeSwapSwitchOutcome?
     var task: Task<Void, Never>?
     var versionProbedPath: String?
     var versionProbeGeneration: UInt64 = 0
@@ -53,6 +55,7 @@ extension UsageStore {
             self.claudeSwapTransientState.lastErrorAccountID != nil ||
             self.claudeSwapTransientState.switchingAccountID != nil ||
             self.claudeSwapTransientState.switchingStrategy != nil ||
+            self.claudeSwapTransientState.lastSwitchOutcome != nil ||
             self.claudeSwapTransientState.versionProbedPath != nil ||
             self.claudeSwapDetectedVersion != nil
         self.claudeSwapRefreshTask?.cancel()
@@ -64,6 +67,7 @@ extension UsageStore {
         self.claudeSwapTransientState.lastErrorAccountID = nil
         self.claudeSwapTransientState.switchingAccountID = nil
         self.claudeSwapTransientState.switchingStrategy = nil
+        self.claudeSwapTransientState.lastSwitchOutcome = nil
         self.claudeSwapTransientState.versionProbedPath = nil
         self.claudeSwapTransientState.versionProbeGeneration &+= 1
         self.claudeSwapDetectedVersion = nil
@@ -139,7 +143,7 @@ extension UsageStore {
         let executablePath = self.settings.claudeSwapExecutablePath
         self.claudeSwapTransientState.switchingAccountID = accountID
         self.runClaudeSwapSwitch(executablePath: executablePath, attributingErrorTo: accountID) {
-            _ = try await ClaudeSwapAccountReader.switchAccount(
+            try await ClaudeSwapAccountReader.switchAccount(
                 executablePath: executablePath,
                 accountNumber: accountNumber)
         }
@@ -162,7 +166,7 @@ extension UsageStore {
         let executablePath = self.settings.claudeSwapExecutablePath
         self.claudeSwapTransientState.switchingStrategy = strategy
         self.runClaudeSwapSwitch(executablePath: executablePath, attributingErrorTo: nil) {
-            _ = try await ClaudeSwapAccountReader.switchAccount(
+            try await ClaudeSwapAccountReader.switchAccount(
                 executablePath: executablePath,
                 strategy: strategy)
         }
@@ -180,16 +184,22 @@ extension UsageStore {
     private func runClaudeSwapSwitch(
         executablePath: String,
         attributingErrorTo accountID: ProviderAccountIdentity?,
-        operation: @escaping @Sendable () async throws -> Void)
+        operation: @escaping @Sendable () async throws -> ClaudeSwapAccountSwitchResult)
     {
         self.claudeSwapTransientState.lastError = nil
         self.claudeSwapTransientState.lastErrorAccountID = nil
+        // A new switch supersedes the previous one's confirmation.
+        self.claudeSwapTransientState.lastSwitchOutcome = nil
         self.claudeSwapRevision &+= 1
 
         self.claudeSwapTransientState.task = Task { @MainActor [weak self] in
             var switchError: String?
+            var outcome: ClaudeSwapSwitchOutcome?
             do {
-                try await operation()
+                let result = try await operation()
+                // A strategy switch only names its destination in the result, so
+                // the confirmation target is derived here rather than up front.
+                outcome = ClaudeSwapSwitchOutcome.from(result: result, completedAt: Date())
             } catch {
                 switchError = (error as? LocalizedError)?.errorDescription
                     ?? error.localizedDescription
@@ -208,6 +218,7 @@ extension UsageStore {
             if configurationIsCurrent {
                 self.claudeSwapTransientState.lastError = switchError
                 self.claudeSwapTransientState.lastErrorAccountID = switchError == nil ? nil : accountID
+                self.claudeSwapTransientState.lastSwitchOutcome = outcome
             }
             self.claudeSwapRevision &+= 1
         }

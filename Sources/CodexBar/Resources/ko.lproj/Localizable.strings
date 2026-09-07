@@ -1518,3 +1518,5 @@
 "Next Account" = "다음 계정";
 "Account With Most Quota Left" = "남은 할당량이 가장 많은 계정";
 "Next Account Not At Its Limit" = "한도에 도달하지 않은 다음 계정";
+"Switched" = "전환됨";
+"Already Active" = "이미 활성";

@@ -205,6 +205,11 @@ The accepted multi-account design in
   successful outcome. The submenu is hidden when no inactive, actionable, non-disabled slot exists. Accounts held out
   of rotation with `cswap disable` are marked “(disabled)”, stay valid explicit switch targets, and are never chosen
   on the user's behalf — claude-swap's own rule.
+- Confirmation: when a switch completes, the account card it landed on reports “Switched”, or “Already Active” when
+  claude-swap reported that slot was already active. The confirmation replaces that card's action label for
+  `ClaudeSwapAccountActionPlanner.confirmationWindow` (90s) and is superseded by any newer switch, so it survives the
+  menu closing on click but never reads as a permanent state. A run that named no destination slot confirms nothing;
+  failures keep surfacing as the existing per-account switch error.
 - Every switch is one explicit user click. Switches are serialized; claude-swap's background `auto` loop is never
   started, and no automatic switching occurs. While
   claude-swap owns account presentation, the separate ambient OAuth action reads “Sign in with Claude Code…” and does

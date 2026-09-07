@@ -1548,3 +1548,5 @@
 "Next Account" = "Nästa konto";
 "Account With Most Quota Left" = "Konto med mest kvot kvar";
 "Next Account Not At Its Limit" = "Nästa konto som inte nått sin gräns";
+"Switched" = "Växlat";
+"Already Active" = "Redan aktivt";

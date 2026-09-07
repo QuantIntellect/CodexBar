@@ -1549,3 +1549,5 @@
 "Next Account" = "Наступний обліковий запис";
 "Account With Most Quota Left" = "Обліковий запис із найбільшим залишком квоти";
 "Next Account Not At Its Limit" = "Наступний обліковий запис, що не досяг ліміту";
+"Switched" = "Перемкнено";
+"Already Active" = "Уже активний";

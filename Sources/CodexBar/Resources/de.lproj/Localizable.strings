@@ -1549,3 +1549,5 @@
 "Next Account" = "Nächstes Konto";
 "Account With Most Quota Left" = "Konto mit dem meisten verbleibenden Kontingent";
 "Next Account Not At Its Limit" = "Nächstes Konto, das sein Limit nicht erreicht hat";
+"Switched" = "Gewechselt";
+"Already Active" = "Bereits aktiv";

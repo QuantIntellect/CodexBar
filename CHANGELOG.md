@@ -3,6 +3,7 @@
 ## 0.56.8 — Unreleased
 
 ### Added
+- Claude (claude-swap): confirm what a switch did on the account card it landed on — "Switched", or "Already Active" when claude-swap reported the slot was already active. A switch used to be silent: the menu closes on click, so a target whose usage reads the same before and after looked untouched.
 - Claude (claude-swap): switch with claude-swap choosing the target — rotate, the account with the most quota left, or the next account not at its limit — from a new Switch Using claude-swap submenu. Each action is one explicit click running one fixed argument array; accounts held out of rotation with `cswap disable` stay explicit switch targets but are never chosen automatically.
 
 ### Fixed

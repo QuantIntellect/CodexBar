@@ -1549,3 +1549,5 @@
 "Next Account" = "次のアカウント";
 "Account With Most Quota Left" = "残量が最も多いアカウント";
 "Next Account Not At Its Limit" = "上限に達していない次のアカウント";
+"Switched" = "切り替えました";
+"Already Active" = "すでにアクティブ";

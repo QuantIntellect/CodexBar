@@ -1561,3 +1561,5 @@
 "Next Account" = "下一个账户";
 "Account With Most Quota Left" = "剩余额度最多的账户";
 "Next Account Not At Its Limit" = "下一个未达上限的账户";
+"Switched" = "已切换";
+"Already Active" = "已是当前账户";

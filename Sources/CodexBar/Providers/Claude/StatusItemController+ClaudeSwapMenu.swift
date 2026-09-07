@@ -113,14 +113,21 @@ extension StatusItemController {
     }
 
     private func claudeSwapAccountActionLabel(_ account: ProviderAccountUsageSnapshot) -> String? {
-        if account.isActive {
-            return L("Active")
+        let transient = self.store.claudeSwapTransientState
+        let action = ClaudeSwapAccountActionPlanner.action(
+            for: account,
+            outcome: transient.lastSwitchOutcome,
+            switchingAccountID: transient.switchingAccountID,
+            hasSwitchInFlight: transient.task != nil,
+            now: Date())
+        return switch action {
+        case .switchedConfirmation: L("Switched")
+        case .alreadyActiveConfirmation: L("Already Active")
+        case .active: L("Active")
+        case .switching: L("Loading…")
+        case .offerSwitch: L("Switch Account...")
+        case .none: nil
         }
-        if self.store.claudeSwapTransientState.switchingAccountID == account.id {
-            return L("Loading…")
-        }
-        guard self.store.claudeSwapTransientState.task == nil, account.canActivate else { return nil }
-        return L("Switch Account...")
     }
 
     private func claudeSwapAccountSwitchAction(

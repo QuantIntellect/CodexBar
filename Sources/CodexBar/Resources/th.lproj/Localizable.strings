@@ -1553,3 +1553,5 @@
 "Next Account" = "บัญชีถัดไป";
 "Account With Most Quota Left" = "บัญชีที่มีโควตาเหลือมากที่สุด";
 "Next Account Not At Its Limit" = "บัญชีถัดไปที่ยังไม่ถึงขีดจำกัด";
+"Switched" = "สลับแล้ว";
+"Already Active" = "ใช้งานอยู่แล้ว";
