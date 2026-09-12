@@ -8,6 +8,7 @@
 - **Safer account menus:** preserve privacy in Codex account labels and reauthenticate the credential source shown by the selected row.
 
 ### Changes
+- Claude (claude-swap): add explicit switches where claude-swap picks the destination — next account, the account with the most quota left, and the next account not at its limit. Each runs one fixed argument array from a closed enum on one user click; blocked attempts are reported with their reason instead of reading as success, and disabled slots stay selectable but are never chosen automatically (#3452).
 - Claude (claude-swap): show the usage the adapter already reports — pay-as-you-go spend, and the last known measurement for rows whose live usage is unavailable, dated by its own fetch time so the card states its true age instead of going blank. Last-known numbers stay off the menu bar icon, which cannot state a snapshot's age. Slots disabled in claude-swap are marked, and the active account's label is emphasized so it is identifiable among sibling cards (#3452).
 - Usage & Spend: count covered calendar days, align chart labels and ranges with the selected bucket time zone, and preserve historical-pace credits after midnight daylight-saving transitions (follow-up to #3565).
 - Usage & Spend: preserve heatmap coverage, token totals, and daily ledger rows across midnight daylight-saving transitions, retaining real gaps and unscanned days (#3565). Thanks @gabrielrojasc!

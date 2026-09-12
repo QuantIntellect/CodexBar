@@ -1557,3 +1557,10 @@
 
 "agent_sessions_hide_unreachable_title" = "پنهان کردن میزبان‌های در دسترس نبودنی";
 "agent_sessions_hide_unreachable_subtitle" = "میزبان‌ها را در صورت ناموفق بودن دریافت نشست‌هایشان پنهان کنید.";
+"Switch Using claude-swap" = "تعویض با claude-swap";
+"Next Account" = "حساب بعدی";
+"Account With Most Quota Left" = "حساب با بیشترین سهمیه باقی‌مانده";
+"Next Account Not At Its Limit" = "حساب بعدی که به سقف خود نرسیده است";
+"Switched" = "تعویض شد";
+"Already Active" = "از قبل فعال";
+"Switch failed: %@" = "تعویض ناموفق بود: %@";

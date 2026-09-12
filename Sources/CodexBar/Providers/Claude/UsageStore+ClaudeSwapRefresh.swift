@@ -7,6 +7,14 @@ struct ClaudeSwapTransientState {
     var lastError: String?
     var lastErrorAccountID: ProviderAccountIdentity?
     var switchingAccountID: ProviderAccountIdentity?
+    /// Set instead of `switchingAccountID` while claude-swap picks the target itself.
+    var switchingStrategy: ClaudeSwapSwitchStrategy?
+    /// The last completed switch, so the card it landed on can confirm it.
+    var lastSwitchOutcome: ClaudeSwapSwitchOutcome?
+    /// A failed or blocked switch that belongs to no single account card.
+    /// Strategy switches have no requested slot, so without this their errors
+    /// would have nowhere to render and would vanish when the menu closes.
+    var lastSectionError: String?
     var task: Task<Void, Never>?
     var versionProbedPath: String?
     var versionProbeGeneration: UInt64 = 0
@@ -132,35 +140,120 @@ extension UsageStore {
 
         let executablePath = self.settings.claudeSwapExecutablePath
         self.claudeSwapTransientState.switchingAccountID = accountID
+        self.runClaudeSwapSwitch(executablePath: executablePath, attributingErrorTo: accountID) {
+            try await ClaudeSwapAccountReader.switchAccount(
+                executablePath: executablePath,
+                accountNumber: accountNumber)
+        }
+    }
+
+    /// Explicit switch where claude-swap chooses the destination slot. Still one
+    /// user click and one bounded transaction; only the target selection moves to
+    /// the source. claude-swap's background `auto` loop is never started.
+    func switchClaudeSwapAccount(strategy: ClaudeSwapSwitchStrategy) {
+        guard self.claudeSwapTransientState.task == nil,
+              self.shouldFetchClaudeSwapAccounts(),
+              self.availableClaudeSwapStrategies().contains(strategy)
+        else {
+            return
+        }
+
+        let executablePath = self.settings.claudeSwapExecutablePath
+        self.claudeSwapTransientState.switchingStrategy = strategy
+        self.runClaudeSwapSwitch(executablePath: executablePath, attributingErrorTo: nil) {
+            try await ClaudeSwapAccountReader.switchAccount(
+                executablePath: executablePath,
+                strategy: strategy)
+        }
+    }
+
+    func availableClaudeSwapStrategies() -> [ClaudeSwapSwitchStrategy] {
+        ClaudeSwapSwitchMenuPlanner.availableStrategies(accounts: self.claudeSwapAccountSnapshots)
+    }
+
+    private func runClaudeSwapSwitch(
+        executablePath: String,
+        attributingErrorTo accountID: ProviderAccountIdentity?,
+        operation: @escaping @Sendable () async throws -> ClaudeSwapAccountSwitchResult)
+    {
         self.claudeSwapTransientState.lastError = nil
         self.claudeSwapTransientState.lastErrorAccountID = nil
+        // A new switch supersedes the previous one's confirmation and error.
+        self.claudeSwapTransientState.lastSwitchOutcome = nil
+        self.claudeSwapTransientState.lastSectionError = nil
         self.claudeSwapRevision &+= 1
 
         self.claudeSwapTransientState.task = Task { @MainActor [weak self] in
             var switchError: String?
+            var outcome: ClaudeSwapSwitchOutcome?
             do {
-                _ = try await ClaudeSwapAccountReader.switchAccount(
-                    executablePath: executablePath,
-                    accountNumber: accountNumber)
+                let result = try await operation()
+                // A strategy switch only names its destination in the result, so
+                // the confirmation target is derived here rather than up front.
+                outcome = ClaudeSwapSwitchOutcome.from(result: result, completedAt: Date())
+                // claude-swap reports the current account as the destination for
+                // blocked attempts too, so a non-null target is not success.
+                if case let .blocked(reason) = ClaudeSwapSwitchResultClassifier.classify(result) {
+                    switchError = ClaudeSwapSwitchResultClassifier.blockedExplanation(reason: reason)
+                }
             } catch {
                 switchError = (error as? LocalizedError)?.errorDescription
                     ?? error.localizedDescription
             }
 
             guard let self else { return }
+
+            // Publish the known result before awaiting any refresh, so a failure
+            // is never hidden behind a slow or queued reconcile (#3580).
             if self.isCurrentClaudeSwapConfiguration(executablePath: executablePath) {
-                self.claudeSwapTransientState.lastError = switchError
-                self.claudeSwapTransientState.lastErrorAccountID = switchError == nil ? nil : accountID
+                self.claudeSwapTransientState.lastSwitchOutcome = outcome
+                // An error with no owning account card (any strategy switch, and
+                // any blocked outcome) is reported on the section instead, so it
+                // cannot silently disappear.
+                if let switchError, let accountID {
+                    self.claudeSwapTransientState.lastError = switchError
+                    self.claudeSwapTransientState.lastErrorAccountID = accountID
+                } else {
+                    self.claudeSwapTransientState.lastSectionError = switchError
+                }
                 self.claudeSwapRevision &+= 1
-                // Claude Code owns the ambient credential, so reconcile both
-                // the provider snapshot and the adapter's active-row marker.
+
+                // Re-list claude-swap before reconciling ambient Claude usage. The
+                // adapter owns the active marker and the numbers the cards render,
+                // and re-listing is one short subprocess; the ambient fetch probes
+                // OAuth, the CLI and the web and can take seconds. Refreshing
+                // ambient first left the cards showing the pre-switch state for
+                // that whole window, so a completed switch read as a click that
+                // did nothing.
+                //
+                // Only after a switch that landed: a failed or blocked attempt
+                // changed no account state, so re-listing would spend a
+                // subprocess to redraw identical cards.
+                if switchError == nil {
+                    await self.refreshClaudeSwapAccounts()
+                }
+            }
+            self.claudeSwapTransientState.switchingAccountID = nil
+            self.claudeSwapTransientState.switchingStrategy = nil
+            self.claudeSwapRevision &+= 1
+
+            // Claude Code owns the ambient credential, so it still has to be
+            // reconciled. The transaction marker is held until that finishes so
+            // two credential writes can never overlap.
+            if self.isCurrentClaudeSwapConfiguration(executablePath: executablePath) {
                 await self.refreshProvider(.claude)
             }
-            let currentError = self.isCurrentClaudeSwapConfiguration(executablePath: executablePath) ? switchError : nil
+            // The adapter configuration can change while either refresh runs.
+            // Re-check after the awaits rather than trusting a value read before
+            // them: a result that no longer belongs to the current configuration
+            // must not stay on screen.
+            if !self.isCurrentClaudeSwapConfiguration(executablePath: executablePath) {
+                self.claudeSwapTransientState.lastError = nil
+                self.claudeSwapTransientState.lastErrorAccountID = nil
+                self.claudeSwapTransientState.lastSectionError = nil
+                self.claudeSwapTransientState.lastSwitchOutcome = nil
+            }
             self.claudeSwapTransientState.task = nil
-            self.claudeSwapTransientState.switchingAccountID = nil
-            self.claudeSwapTransientState.lastError = currentError
-            self.claudeSwapTransientState.lastErrorAccountID = currentError == nil ? nil : accountID
             self.claudeSwapRevision &+= 1
         }
     }

@@ -1557,3 +1557,10 @@
 
 "agent_sessions_hide_unreachable_title" = "ซ่อนโฮสต์ที่เข้าถึงไม่ได้";
 "agent_sessions_hide_unreachable_subtitle" = "ซ่อนโฮสต์เมื่อดึงข้อมูลเซสชันไม่สำเร็จ";
+"Switch Using claude-swap" = "สลับด้วย claude-swap";
+"Next Account" = "บัญชีถัดไป";
+"Account With Most Quota Left" = "บัญชีที่มีโควตาเหลือมากที่สุด";
+"Next Account Not At Its Limit" = "บัญชีถัดไปที่ยังไม่ถึงขีดจำกัด";
+"Switched" = "สลับแล้ว";
+"Already Active" = "ใช้งานอยู่แล้ว";
+"Switch failed: %@" = "สลับไม่สำเร็จ: %@";

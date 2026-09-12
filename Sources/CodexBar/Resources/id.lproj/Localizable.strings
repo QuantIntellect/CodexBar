@@ -1556,3 +1556,10 @@
 
 "agent_sessions_hide_unreachable_title" = "Sembunyikan host yang tidak terjangkau";
 "agent_sessions_hide_unreachable_subtitle" = "Sembunyikan host saat pengambilan sesinya gagal.";
+"Switch Using claude-swap" = "Beralih dengan claude-swap";
+"Next Account" = "Akun Berikutnya";
+"Account With Most Quota Left" = "Akun dengan Sisa Kuota Terbanyak";
+"Next Account Not At Its Limit" = "Akun Berikutnya yang Belum Mencapai Batas";
+"Switched" = "Beralih";
+"Already Active" = "Sudah Aktif";
+"Switch failed: %@" = "Gagal beralih: %@";

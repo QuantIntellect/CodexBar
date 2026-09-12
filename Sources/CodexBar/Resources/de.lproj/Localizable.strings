@@ -1553,3 +1553,10 @@
 
 "agent_sessions_hide_unreachable_title" = "Nicht erreichbare Hosts ausblenden";
 "agent_sessions_hide_unreachable_subtitle" = "Hosts ausblenden, wenn ihre Sitzungen nicht abgerufen werden können.";
+"Switch Using claude-swap" = "Mit claude-swap wechseln";
+"Next Account" = "Nächstes Konto";
+"Account With Most Quota Left" = "Konto mit dem meisten verbleibenden Kontingent";
+"Next Account Not At Its Limit" = "Nächstes Konto, das sein Limit nicht erreicht hat";
+"Switched" = "Gewechselt";
+"Already Active" = "Bereits aktiv";
+"Switch failed: %@" = "Wechsel fehlgeschlagen: %@";

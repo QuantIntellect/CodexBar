@@ -1551,3 +1551,10 @@
 
 "agent_sessions_hide_unreachable_title" = "Ocultar hosts inaccesibles";
 "agent_sessions_hide_unreachable_subtitle" = "Oculta los hosts cuando falla la consulta de sus sesiones.";
+"Switch Using claude-swap" = "Cambiar con claude-swap";
+"Next Account" = "Cuenta siguiente";
+"Account With Most Quota Left" = "Cuenta con más cuota restante";
+"Next Account Not At Its Limit" = "Siguiente cuenta que no ha alcanzado su límite";
+"Switched" = "Cambiado";
+"Already Active" = "Ya activo";
+"Switch failed: %@" = "Error al cambiar: %@";

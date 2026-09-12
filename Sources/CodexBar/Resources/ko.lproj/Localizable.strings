@@ -1522,3 +1522,10 @@
 
 "agent_sessions_hide_unreachable_title" = "연결할 수 없는 호스트 숨기기";
 "agent_sessions_hide_unreachable_subtitle" = "세션을 가져오지 못한 호스트를 숨깁니다.";
+"Switch Using claude-swap" = "claude-swap으로 전환";
+"Next Account" = "다음 계정";
+"Account With Most Quota Left" = "남은 할당량이 가장 많은 계정";
+"Next Account Not At Its Limit" = "한도에 도달하지 않은 다음 계정";
+"Switched" = "전환됨";
+"Already Active" = "이미 활성";
+"Switch failed: %@" = "전환 실패: %@";

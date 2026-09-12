@@ -31,6 +31,11 @@ enum MenuHighlightStyle {
         highlighted ? self.selectionText : Color(nsColor: .controlAccentColor)
     }
 
+    /// Emphasis for a just-completed action, such as a switch that landed.
+    static func success(_ highlighted: Bool) -> Color {
+        highlighted ? self.selectionText : Color(nsColor: .systemGreen)
+    }
+
     static func progressTrack(_ highlighted: Bool) -> Color {
         highlighted ? self.selectionText.opacity(0.22) : Color(nsColor: .tertiaryLabelColor).opacity(0.22)
     }

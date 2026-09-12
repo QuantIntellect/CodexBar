@@ -1552,3 +1552,10 @@
 
 "agent_sessions_hide_unreachable_title" = "Masquer les hôtes inaccessibles";
 "agent_sessions_hide_unreachable_subtitle" = "Masquer les hôtes lorsque la récupération de leurs sessions échoue.";
+"Switch Using claude-swap" = "Changer avec claude-swap";
+"Next Account" = "Compte suivant";
+"Account With Most Quota Left" = "Compte avec le plus de quota restant";
+"Next Account Not At Its Limit" = "Compte suivant n’ayant pas atteint sa limite";
+"Switched" = "Changé";
+"Already Active" = "Déjà actif";
+"Switch failed: %@" = "Échec du changement : %@";

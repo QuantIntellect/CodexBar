@@ -32,6 +32,10 @@ public struct ProviderAccountUsageSnapshot: Identifiable, Sendable {
     /// Whether the source can make this inactive account the provider's active account.
     /// Activation remains source-owned; CodexBar never handles credential material.
     public let canActivate: Bool
+    /// Whether the source holds this account out of its own automatic rotation.
+    /// Such an account stays a valid explicit switch target; it is only excluded
+    /// when the source picks a target on the user's behalf.
+    public let isHeldOutOfRotation: Bool
     /// Whether `snapshot` is a last-known measurement the source served because
     /// live usage was unavailable, rather than a current one. Such a snapshot is
     /// fine on a card that shows its age, but must not drive age-less surfaces.
@@ -47,6 +51,7 @@ public struct ProviderAccountUsageSnapshot: Identifiable, Sendable {
         accountEmail: String? = nil,
         isActive: Bool,
         canActivate: Bool = false,
+        isHeldOutOfRotation: Bool = false,
         usesLastKnownUsage: Bool = false,
         snapshot: UsageSnapshot?,
         error: String?,
@@ -58,6 +63,7 @@ public struct ProviderAccountUsageSnapshot: Identifiable, Sendable {
         self.accountEmail = accountEmail
         self.isActive = isActive
         self.canActivate = canActivate
+        self.isHeldOutOfRotation = isHeldOutOfRotation
         self.usesLastKnownUsage = usesLastKnownUsage
         self.snapshot = snapshot
         self.error = error

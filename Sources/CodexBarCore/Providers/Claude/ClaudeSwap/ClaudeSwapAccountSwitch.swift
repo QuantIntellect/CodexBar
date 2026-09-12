@@ -1,14 +1,43 @@
 import CoreFoundation
 import Foundation
 
-/// Allow-listed result of `cswap --switch-to <slot> --json` (schema v1).
+/// How claude-swap should pick the account to activate.
+///
+/// Every case maps to a fixed argument array. CodexBar never forwards
+/// user-supplied arguments, and each of these is still driven by an explicit
+/// click — none of them starts claude-swap's background `auto` loop.
+public enum ClaudeSwapSwitchStrategy: String, CaseIterable, Equatable, Sendable {
+    /// `cswap --switch` — rotate to the next account in slot order.
+    case rotate
+    /// `cswap --switch --strategy best` — the account with the most quota left.
+    case best
+    /// `cswap --switch --strategy next-available` — rotate, skipping accounts at their limit.
+    case nextAvailable
+
+    /// The exact argument array executed for this strategy.
+    public var arguments: [String] {
+        switch self {
+        case .rotate: ["--switch", "--json"]
+        case .best: ["--switch", "--strategy", "best", "--json"]
+        case .nextAvailable: ["--switch", "--strategy", "next-available", "--json"]
+        }
+    }
+}
+
+/// Allow-listed result of a `cswap` switch (schema v1).
+///
+/// `toAccountNumber` is nil only for a strategy switch that found no viable
+/// target; a slot-targeted switch always reports the slot it landed on.
 public struct ClaudeSwapAccountSwitchResult: Equatable, Sendable {
     public let switched: Bool
     public let fromAccountNumber: Int?
-    public let toAccountNumber: Int
+    public let toAccountNumber: Int?
+    /// Machine-readable outcome token (e.g. `switched`, `already-active`).
+    /// claude-swap's human `message` field is deliberately not parsed: it embeds
+    /// the account email, which must not bypass Hide Personal Info.
     public let reason: String
 
-    public init(switched: Bool, fromAccountNumber: Int?, toAccountNumber: Int, reason: String) {
+    public init(switched: Bool, fromAccountNumber: Int?, toAccountNumber: Int?, reason: String) {
         self.switched = switched
         self.fromAccountNumber = fromAccountNumber
         self.toAccountNumber = toAccountNumber
@@ -22,7 +51,8 @@ public enum ClaudeSwapSwitchParserError: LocalizedError, Equatable, Sendable {
     case unsupportedSchemaVersion(Int)
     case reportedError(type: String, message: String)
     case malformedShape(String)
-    case mismatchedTarget(expected: Int, actual: Int)
+    case mismatchedTarget(expected: Int, actual: Int?)
+    case noViableTarget(reason: String)
 
     public var errorDescription: String? {
         switch self {
@@ -37,7 +67,13 @@ public enum ClaudeSwapSwitchParserError: LocalizedError, Equatable, Sendable {
         case let .malformedShape(details):
             "claude-swap switch output is malformed: \(details)"
         case let .mismatchedTarget(expected, actual):
-            "claude-swap reported account slot \(actual) after CodexBar requested slot \(expected)."
+            if let actual {
+                "claude-swap reported account slot \(actual) after CodexBar requested slot \(expected)."
+            } else {
+                "claude-swap reported no account slot after CodexBar requested slot \(expected)."
+            }
+        case let .noViableTarget(reason):
+            "claude-swap found no account to switch to (\(reason))."
         }
     }
 }
@@ -76,13 +112,13 @@ public enum ClaudeSwapSwitchParser {
             in: object["from"],
             field: "from",
             allowsNull: true)
-        guard let toAccountNumber = try self.accountNumber(
+        // A strategy switch that finds nothing viable reports `to: null`; a
+        // slot-targeted switch always names the slot it landed on. The caller
+        // decides which of those it will accept.
+        let toAccountNumber = try self.accountNumber(
             in: object["to"],
             field: "to",
-            allowsNull: false)
-        else {
-            throw ClaudeSwapSwitchParserError.malformedShape("to account has no numeric slot")
-        }
+            allowsNull: true)
         return ClaudeSwapAccountSwitchResult(
             switched: switched,
             fromAccountNumber: fromAccountNumber,

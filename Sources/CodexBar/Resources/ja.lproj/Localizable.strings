@@ -1553,3 +1553,10 @@
 
 "agent_sessions_hide_unreachable_title" = "接続できないホストを非表示";
 "agent_sessions_hide_unreachable_subtitle" = "セッションの取得に失敗したホストを非表示にします。";
+"Switch Using claude-swap" = "claude-swap で切り替え";
+"Next Account" = "次のアカウント";
+"Account With Most Quota Left" = "残量が最も多いアカウント";
+"Next Account Not At Its Limit" = "上限に達していない次のアカウント";
+"Switched" = "切り替えました";
+"Already Active" = "すでにアクティブ";
+"Switch failed: %@" = "切り替えに失敗しました: %@";

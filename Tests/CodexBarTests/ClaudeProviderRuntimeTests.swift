@@ -145,8 +145,12 @@ struct ClaudeProviderRuntimeTests {
         let task = try #require(store.claudeSwapTransientState.task)
         await task.value
 
+        // Exact argv, in order: the credential transaction, then the version
+        // probe and the read-only re-list that republish the cards before the
+        // slower ambient refresh. Every one is an allow-listed fixed array;
+        // nothing else may ever reach the executable.
         let arguments = try String(contentsOf: marker, encoding: .utf8)
-        #expect(arguments == "--switch-to\n2\n--json\n")
+        #expect(arguments == "--switch-to\n2\n--json\n--version\n--list\n--json\n")
         #expect(refreshedProviders == [.claude])
         #expect(store.claudeSwapTransientState.task == nil)
         #expect(store.claudeSwapTransientState.switchingAccountID == nil)
@@ -366,10 +370,20 @@ struct ClaudeProviderRuntimeTests {
             .appendingPathComponent("claude-switch-runtime-tests-\(UUID().uuidString)", isDirectory: true)
         try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
         let url = directory.appendingPathComponent("cswap")
+        // Appends every invocation so the test can pin the full argv sequence,
+        // and answers each allow-listed command with its own valid payload.
         let script = """
         #!/bin/sh
-        printf '%s\n' "$@" > '\(marker.path)'
-        echo '{"schemaVersion":1,"switched":true,"from":{"number":1},"to":{"number":2},"reason":"switched"}'
+        printf '%s\n' "$@" >> '\(marker.path)'
+        if [ "$1" = "--version" ]; then
+          echo 'cswap 0.26.0'
+        elif [ "$1" = "--list" ]; then
+          printf '%s' '{"schemaVersion":1,"activeAccountNumber":2,"accounts":[' \\
+            '{"number":2,"email":"switch@example.com","active":true,' \\
+            '"usageStatus":"ok","usage":{"fiveHour":{"pct":10}}}]}'
+        else
+          echo '{"schemaVersion":1,"switched":true,"from":{"number":1},"to":{"number":2},"reason":"switched"}'
+        fi
         """
         try script.write(to: url, atomically: true, encoding: .utf8)
         try FileManager.default.setAttributes([.posixPermissions: 0o755], ofItemAtPath: url.path)

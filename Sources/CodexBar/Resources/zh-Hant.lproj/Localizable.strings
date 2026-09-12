@@ -1584,3 +1584,10 @@
 
 "agent_sessions_hide_unreachable_title" = "隱藏無法連線的主機";
 "agent_sessions_hide_unreachable_subtitle" = "擷取工作階段失敗時隱藏該主機。";
+"Switch Using claude-swap" = "使用 claude-swap 切換";
+"Next Account" = "下一個帳戶";
+"Account With Most Quota Left" = "剩餘額度最多的帳戶";
+"Next Account Not At Its Limit" = "下一個未達上限的帳戶";
+"Switched" = "已切換";
+"Already Active" = "已是目前帳戶";
+"Switch failed: %@" = "切換失敗：%@";

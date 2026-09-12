@@ -1552,3 +1552,10 @@
 
 "agent_sessions_hide_unreachable_title" = "Dölj värdar som inte kan nås";
 "agent_sessions_hide_unreachable_subtitle" = "Dölj värdar när deras sessioner inte kan hämtas.";
+"Switch Using claude-swap" = "Växla med claude-swap";
+"Next Account" = "Nästa konto";
+"Account With Most Quota Left" = "Konto med mest kvot kvar";
+"Next Account Not At Its Limit" = "Nästa konto som inte nått sin gräns";
+"Switched" = "Växlat";
+"Already Active" = "Redan aktivt";
+"Switch failed: %@" = "Växling misslyckades: %@";

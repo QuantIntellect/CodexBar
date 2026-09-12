@@ -71,6 +71,60 @@ extension StatusItemController {
             to: menu,
             captureMenu: captureMenu,
             context: context)
+        self.addClaudeSwapSwitchStrategyItems(to: menu)
+        self.addClaudeSwapSectionError(to: menu)
+    }
+
+    /// Lets claude-swap pick the destination itself, mirroring the rotate /
+    /// best / next-available actions its own menu bar offers. Each item is one
+    /// explicit click running one fixed argument array; none of them starts
+    /// claude-swap's background auto-switch loop.
+    func addClaudeSwapSwitchStrategyItems(to menu: NSMenu) {
+        let strategies = self.store.availableClaudeSwapStrategies()
+        guard !strategies.isEmpty else { return }
+        let submenu = NSMenu()
+        let switchInFlight = self.store.claudeSwapTransientState.task != nil
+        for strategy in strategies {
+            let item = NSMenuItem(
+                title: Self.claudeSwapStrategyTitle(strategy),
+                action: #selector(self.switchClaudeSwapAccountWithStrategy(_:)),
+                keyEquivalent: "")
+            item.target = self
+            item.representedObject = strategy.rawValue
+            item.isEnabled = !switchInFlight
+            submenu.addItem(item)
+        }
+        // Distinct from the per-card "Switch Account…" action, which names its own target.
+        let parent = NSMenuItem(title: L("Switch Using claude-swap"), action: nil, keyEquivalent: "")
+        parent.isEnabled = !switchInFlight
+        parent.submenu = submenu
+        menu.addItem(parent)
+    }
+
+    /// A failed or blocked switch that belongs to no single account card.
+    /// Rendered next to the strategy actions so "nothing changed" always comes
+    /// with its reason instead of disappearing when the menu closes.
+    func addClaudeSwapSectionError(to menu: NSMenu) {
+        guard let message = self.store.claudeSwapTransientState.lastSectionError else { return }
+        let item = NSMenuItem(title: L("Switch failed: %@", message), action: nil, keyEquivalent: "")
+        item.isEnabled = false
+        menu.addItem(item)
+    }
+
+    static func claudeSwapStrategyTitle(_ strategy: ClaudeSwapSwitchStrategy) -> String {
+        switch strategy {
+        case .rotate: L("Next Account")
+        case .best: L("Account With Most Quota Left")
+        case .nextAvailable: L("Next Account Not At Its Limit")
+        }
+    }
+
+    @objc private func switchClaudeSwapAccountWithStrategy(_ sender: NSMenuItem) {
+        guard let rawValue = sender.representedObject as? String,
+              let strategy = ClaudeSwapSwitchStrategy(rawValue: rawValue)
+        else { return }
+        self.advanceMenuInteraction(for: sender.menu)
+        self.store.switchClaudeSwapAccount(strategy: strategy)
     }
 
     func resetClaudeSwapAccountInspection() {
@@ -116,14 +170,20 @@ extension StatusItemController {
                 guard cardRows.indices.contains(index) else { return nil }
                 return self?.claudeSwapAccountSwitchAction(cardRows[index].account, menu: captureMenu)
             })
+        self.addClaudeSwapSwitchStrategyItems(to: menu)
+        self.addClaudeSwapSectionError(to: menu)
     }
 
     private func claudeSwapCardModel(for account: ProviderAccountUsageSnapshot) -> UsageMenuCardView.Model? {
         var model = self.baseClaudeSwapCardModel(for: account)
         // The claude-swap label is account state, not a plan name: give the
-        // active account visible weight so it is identifiable at a glance
-        // among sibling cards that otherwise look identical.
-        model?.planEmphasis = account.isActive ? .active : .none
+        // active account and a landed switch visible weight so the current
+        // account is identifiable at a glance among identical-looking cards.
+        model?.planEmphasis = switch self.claudeSwapAccountAction(account) {
+        case .active: .active
+        case .switchedConfirmation, .alreadyActiveConfirmation: .success
+        case .switching, .offerSwitch, .none: .none
+        }
         return model
     }
 
@@ -145,15 +205,25 @@ extension StatusItemController {
             sourceLabelOverride: ClaudeSwapAccountProjection.sourceLabel)
     }
 
+    private func claudeSwapAccountAction(_ account: ProviderAccountUsageSnapshot) -> ClaudeSwapAccountAction {
+        let transient = self.store.claudeSwapTransientState
+        return ClaudeSwapAccountActionPlanner.action(
+            for: account,
+            outcome: transient.lastSwitchOutcome,
+            switchingAccountID: transient.switchingAccountID,
+            hasSwitchInFlight: transient.task != nil,
+            now: Date())
+    }
+
     private func claudeSwapAccountActionLabel(_ account: ProviderAccountUsageSnapshot) -> String? {
-        if account.isActive {
-            return L("Active")
+        switch self.claudeSwapAccountAction(account) {
+        case .switchedConfirmation: L("Switched")
+        case .alreadyActiveConfirmation: L("Already Active")
+        case .active: L("Active")
+        case .switching: L("Loading…")
+        case .offerSwitch: L("Switch Account...")
+        case .none: nil
         }
-        if self.store.claudeSwapTransientState.switchingAccountID == account.id {
-            return L("Loading…")
-        }
-        guard self.store.claudeSwapTransientState.task == nil, account.canActivate else { return nil }
-        return L("Switch Account...")
     }
 
     private func claudeSwapAccountSwitchAction(

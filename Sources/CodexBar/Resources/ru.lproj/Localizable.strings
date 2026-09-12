@@ -1554,3 +1554,10 @@
 
 "agent_sessions_hide_unreachable_title" = "Скрывать недоступные узлы";
 "agent_sessions_hide_unreachable_subtitle" = "Скрывать узлы, если не удалось получить их сеансы.";
+"Switch Using claude-swap" = "Переключиться через claude-swap";
+"Next Account" = "Следующая учётная запись";
+"Account With Most Quota Left" = "Учётная запись с наибольшим остатком квоты";
+"Next Account Not At Its Limit" = "Следующая учётная запись, не достигшая лимита";
+"Switched" = "Переключено";
+"Already Active" = "Уже активна";
+"Switch failed: %@" = "Не удалось переключиться: %@";

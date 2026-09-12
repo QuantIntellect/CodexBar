@@ -45,6 +45,7 @@ public enum ClaudeSwapAccountProjection {
                 accountEmail: row.email.isEmpty ? nil : row.email,
                 isActive: row.isActive,
                 canActivate: !row.isActive && self.canActivate(row),
+                isHeldOutOfRotation: row.isDisabled,
                 usesLastKnownUsage: projected.usesLastKnownUsage,
                 snapshot: snapshot,
                 error: self.errorText(for: row, snapshot: snapshot, now: now),

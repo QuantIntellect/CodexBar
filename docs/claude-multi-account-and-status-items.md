@@ -8,7 +8,8 @@ read_when:
 
 # Claude multi-account and status item decision
 
-Status: **Phase 1 account display implemented; Phase 2 explicit account activation accepted.**
+Status: **Phase 1 account display implemented; Phase 2 explicit account activation accepted;
+source-chosen switch targets proposed (see "Proposed: source-chosen switch targets").**
 
 Related: [#1756](https://github.com/steipete/CodexBar/issues/1756),
 [#1268](https://github.com/steipete/CodexBar/issues/1268), and the bounded Claude sign-in repair in
@@ -121,6 +122,27 @@ last refresh, adapter errors, and a link to the upstream project; CodexBar shoul
 - Keep expired, missing, unknown, and Keychain-inaccessible credential slots non-actionable. Never auto-switch, launch
   sessions, add/import/export/purge accounts, or mutate credentials directly.
 
+## Proposed: source-chosen switch targets
+
+Phase 2 activates one slot the user names. claude-swap's own menu bar additionally offers three switches where the tool
+picks the destination: rotate, the account with the most quota left, and the next account that is not at its limit.
+These are proposed as an extension to Phase 2, not a change to the credential boundary:
+
+- Each maps to exactly one fixed argument array — `cswap --switch [--strategy best|next-available] --json` — selected
+  from a closed enum. No free-form arguments, no shell, no config-defined passthrough.
+- Each is still started by one explicit click and runs one bounded transaction to natural exit, serialized against slot
+  switches so two credential transactions can never overlap. This is **not** claude-swap's background `auto` loop,
+  which stays out of scope.
+- A strategy run names no slot up front, so its result is classified by `reason` rather than by its target: claude-swap
+  reports the current account as the destination for blocked attempts too. `already-active` and `already-best` are
+  successful outcomes; every other non-switch, including a reason a future release adds, is reported as a failure.
+- Errors from a strategy run belong to no single account card, so they render on the adapter section instead.
+- Accounts held out of rotation with `cswap disable` remain valid explicit switch targets but are never chosen on the
+  user's behalf, matching claude-swap's own rule. The actions are hidden entirely when no such target exists.
+
+This changes no storage, status item migration, process authority, or credential boundary: CodexBar still handles no
+credentials, reads no claude-swap or Claude Code storage, and adds no background switching.
+
 ## Provider-neutral account model
 
 Introduce one projection used by menus and status items rather than teaching status item code about Claude OAuth:
@@ -183,7 +205,8 @@ explicit “Switch Account…” action. No real credential, browser session, or
 
 1. The optional external `claude-swap` dependency is accepted for exact `cswap --list --json` execution and explicit
    `cswap --switch-to <slot> --json` activation.
-2. Automatic switching, account add/import/export/purge, and session launching stay out of scope.
+2. Automatic (background) switching, account add/import/export/purge, and session launching stay out of scope.
+   Explicit switches where claude-swap picks the destination slot are proposed separately above, not decided here.
 3. Provider-neutral account snapshots land before any per-account status item work.
 4. Per-account status items are capped at four and mutually exclusive with Merge Icons.
 5. Status item labels use aliases or privacy-safe ordinals, never email identity.

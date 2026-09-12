@@ -1554,3 +1554,10 @@
 
 "agent_sessions_hide_unreachable_title" = "Ẩn máy chủ không thể truy cập";
 "agent_sessions_hide_unreachable_subtitle" = "Ẩn máy chủ khi không lấy được các phiên của máy chủ đó.";
+"Switch Using claude-swap" = "Chuyển bằng claude-swap";
+"Next Account" = "Tài khoản tiếp theo";
+"Account With Most Quota Left" = "Tài khoản còn nhiều hạn mức nhất";
+"Next Account Not At Its Limit" = "Tài khoản tiếp theo chưa đạt giới hạn";
+"Switched" = "Đã chuyển";
+"Already Active" = "Đã hoạt động";
+"Switch failed: %@" = "Chuyển thất bại: %@";

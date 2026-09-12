@@ -12,11 +12,14 @@ extension UsageMenuCardView.Model {
         case none
         /// The account this provider is currently using.
         case active
+        /// An action that just completed successfully.
+        case success
 
         func color(highlighted: Bool) -> Color {
             switch self {
             case .none: MenuHighlightStyle.secondary(highlighted)
             case .active: MenuHighlightStyle.accent(highlighted)
+            case .success: MenuHighlightStyle.success(highlighted)
             }
         }
 

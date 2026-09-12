@@ -173,7 +173,7 @@ struct UsageMenuCardView: View {
         let planText: String?
         /// How the plan/status label should read. Set after construction by
         /// callers that know the label is a state rather than a plan name, so
-        /// the active account stands out from ordinary secondary text.
+        /// "Active" and a landed switch stand out from ordinary secondary text.
         var planEmphasis: PlanEmphasis = .none
         var metrics: [Metric]
         let usageNotes: [String]

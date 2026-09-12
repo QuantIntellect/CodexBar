@@ -1557,3 +1557,10 @@
 
 "agent_sessions_hide_unreachable_title" = "إخفاء المضيفين غير المتاحين";
 "agent_sessions_hide_unreachable_subtitle" = "إخفاء المضيفين عند تعذّر جلب جلساتهم.";
+"Switch Using claude-swap" = "التبديل باستخدام claude-swap";
+"Next Account" = "الحساب التالي";
+"Account With Most Quota Left" = "الحساب صاحب أكبر حصة متبقية";
+"Next Account Not At Its Limit" = "الحساب التالي الذي لم يبلغ حده";
+"Switched" = "تم التبديل";
+"Already Active" = "نشط بالفعل";
+"Switch failed: %@" = "فشل التبديل: %@";

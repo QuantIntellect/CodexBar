@@ -1555,3 +1555,10 @@
 
 "agent_sessions_hide_unreachable_title" = "Amaga els amfitrions inaccessibles";
 "agent_sessions_hide_unreachable_subtitle" = "Amaga els amfitrions quan falla la consulta de les seves sessions.";
+"Switch Using claude-swap" = "Canvia amb claude-swap";
+"Next Account" = "Compte següent";
+"Account With Most Quota Left" = "Compte amb més quota restant";
+"Next Account Not At Its Limit" = "Següent compte que no ha arribat al límit";
+"Switched" = "Canviat";
+"Already Active" = "Ja actiu";
+"Switch failed: %@" = "Ha fallat el canvi: %@";
